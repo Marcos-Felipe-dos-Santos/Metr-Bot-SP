@@ -1,0 +1,65 @@
+# ============================================================
+# MetrôBot SP — arquivos que NUNCA sobem pro GitHub
+# ============================================================
+
+# ---------- Claude Code (caches, config local e estado) ----------
+.claude/settings.local.json
+.claude/state.json
+.claude/history/
+.claude/todos.json
+.claude.json
+*.claude.json
+# Atenção: .claude/agents/ e CLAUDE.md DEVEM subir (arquivos do projeto)
+
+# ---------- Ambiente e segredos ----------
+.env
+.env.*
+!.env.example
+*.local
+
+# ---------- Python / FastAPI ----------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+
+# ---------- Notebooks (prova da matéria no repo) ----------
+.ipynb_checkpoints/
+
+# ---------- Logs ----------
+logs/
+*.log
+
+# ---------- IDEs e editores ----------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- SO ----------
+.DS_Store
+.DS_Store?*
+Thumbs.db
+
+# ---------- Deploy (local, não versionar) ----------
+.vercel/
+.netlify/
