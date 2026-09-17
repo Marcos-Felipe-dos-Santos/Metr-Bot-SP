@@ -1,4 +1,4 @@
-/* MetrôBot SP — front (tema claro, 4 passos)
+/* MetrôBot SP — front em 4 passos (frase, origem, destino, opções)
  *
  * Regra de ouro: este arquivo NÃO calcula rota nem inferência.
  * Ele só reproduz os traces vindos de /api (core/ em Python).
@@ -734,7 +734,7 @@ function mostrarTabelaVerdade() {
   $("#tabela-verdade").textContent = linhas.join("\n");
 }
 
-// ------------------------------------------------------------ rádio (SSE)
+// ------------------------------------------------------------ narração (SSE)
 
 function pararRadio() {
   if (estado.radio) {
