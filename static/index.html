@@ -37,6 +37,16 @@
       <section class="terminal" aria-label="Despacho">
         <p class="regras-title">DESPACHO</p>
 
+        <form id="form-interpretar" class="interpretar">
+          <label class="busca">
+            <input id="mensagem" type="text" maxlength="500" autocomplete="off"
+                   placeholder="fale com a Central: da Luz até a República sem a Sé"
+                   aria-label="Pedido em linguagem natural">
+          </label>
+          <button id="btn-interpretar" class="botao" type="submit">INTERPRETAR</button>
+          <p id="interpretar-status" class="linha-log interpretar-status"></p>
+        </form>
+
         <div class="modos" role="group" aria-label="O que o clique/busca define">
           <button type="button" class="botao modo" data-modo="origem" aria-pressed="true">ORIGEM</button>
           <button type="button" class="botao modo" data-modo="destino" aria-pressed="false">DESTINO</button>
