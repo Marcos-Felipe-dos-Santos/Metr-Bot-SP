@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Despachante do Subsolo — MetrôBot SP</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="hud">
+      <h1 class="hud-titulo">DESPACHANTE DO SUBSOLO · MetrôBot SP</h1>
+      <span id="status-api" class="hud-status">conectando…</span>
+      <span id="hud-contador" class="hud-contador">VISIT 00 · PASSO 000 · PARADAS --</span>
+      <button id="btn-auditoria" class="botao" type="button" aria-pressed="false">MODO AUDITORIA</button>
+    </header>
+
+    <main class="coluna-mapa">
+      <section class="mapa" id="mapa" aria-label="Mapa-carta da rede">
+        <div id="mapa-svg-host"></div>
+        <div id="dossie" class="dossie" role="tooltip"></div>
+        <div id="selo" class="selo" hidden>AUTORIZADO PELA CENTRAL</div>
+      </section>
+
+      <section class="corrida terminal" aria-label="Corrida BFS × DFS">
+        <p class="regras-title">CORRIDA BFS × DFS</p>
+        <div id="corrida" class="corrida-corpo">
+          <p class="linha-log">Nenhum despacho ainda.</p>
+        </div>
+      </section>
+
+      <pre id="rastro-puro" class="rastro-puro" aria-label="Trace em texto puro">Nenhum trace carregado.</pre>
+    </main>
+
+    <aside class="painel">
+      <section class="terminal" aria-label="Despacho">
+        <p class="regras-title">DESPACHO</p>
+
+        <div class="modos" role="group" aria-label="O que o clique/busca define">
+          <button type="button" class="botao modo" data-modo="origem" aria-pressed="true">ORIGEM</button>
+          <button type="button" class="botao modo" data-modo="destino" aria-pressed="false">DESTINO</button>
+          <button type="button" class="botao modo" data-modo="bloquear" aria-pressed="false">BLOQUEAR</button>
+        </div>
+
+        <div class="busca-bloco">
+          <label class="busca">
+            <input id="busca" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="estação ou local conhecido" aria-label="Buscar estação ou local"
+                   aria-controls="dropdown" aria-expanded="false">
+          </label>
+          <div id="dropdown" class="dropdown" role="listbox" hidden></div>
+        </div>
+
+        <dl class="selecao">
+          <dt>origem</dt><dd id="sel-origem" class="sel-origem">—</dd>
+          <dt>destino</dt><dd id="sel-destino" class="sel-destino">—</dd>
+          <dt>bloqueadas</dt><dd id="sel-bloqueadas" class="sel-bloqueadas">nenhuma</dd>
+        </dl>
+
+        <div class="controles">
+          <label>algoritmo
+            <select id="algoritmo">
+              <option value="ambos">BFS × DFS</option>
+              <option value="bfs">BFS</option>
+              <option value="dfs">DFS</option>
+            </select>
+          </label>
+          <label>ritmo
+            <select id="ritmo">
+              <option value="2">lento</option>
+              <option value="1" selected>normal</option>
+              <option value="0.4">rápido</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="acoes">
+          <button id="btn-despachar" class="botao botao-primario" type="button" disabled>DESPACHAR</button>
+          <button id="btn-pular" class="botao" type="button" disabled>PULAR ANIMAÇÃO</button>
+          <button id="btn-limpar" class="botao" type="button">LIMPAR</button>
+        </div>
+      </section>
+
+      <section class="terminal" aria-label="Rastro da busca">
+        <p class="regras-title">RASTRO</p>
+        <div id="log" class="log" aria-live="polite"></div>
+      </section>
+
+      <section class="terminal" aria-label="Rádio da Central">
+        <p class="regras-title">RÁDIO <span id="radio-fonte" class="radio-fonte"></span></p>
+        <p id="radio" class="linha-log radio narracao">Aguardando despacho.</p>
+      </section>
+
+      <section class="terminal" aria-label="Teatro de inferência">
+        <p class="regras-title">INFERÊNCIA</p>
+        <p id="inferencia-resumo" class="linha-log">Base lógica ainda não consultada.</p>
+        <div id="regras"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
