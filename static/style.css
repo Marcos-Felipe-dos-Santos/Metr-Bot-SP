@@ -1,0 +1,341 @@
+/* ============================================================
+   MetrôBot SP — "Despachante do Subsolo"
+   Design system (inspiração Metro 2033 Redux)
+   Escopo v1: paleta, tipografia, texturas e estados.
+   Arquivo: static/style.css
+   ============================================================ */
+
+/* ---------- Fontes (fallback monospace para apresentação offline) ---------- */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Special+Elite&family=VT323&display=swap');
+
+/* ---------- Tokens ---------- */
+:root {
+  /* Fundo e metais */
+  --carvao:      #0B0A08;
+  --tunel:       #1A1815;
+  --tunel-2:     #262219;
+  --ferrugem:    #8A6B4A;
+
+  /* Texto */
+  --osso:        #D8CFBC;
+  --papel:       #C9B896;
+  --papel-claro: #E4D8B8;
+  --fantasma:    #6E675A;
+
+  /* HUD — verde do Geiger, âmbar do explorador */
+  --fosfo:       #7CFF3F;
+  --fosfo-dim:   #3E7A24;
+  --ambar:       #FFB000;
+  --ambar-dim:   #8A5E14;
+
+  /* Alerta e rádio */
+  --alerta:      #E62020;
+  --radio:       #F2C14E;
+
+  /* Linhas oficiais (vivem SÓ dentro do mapa-carta) */
+  --l1: #0054A6;
+  --l2: #009640;
+  --l3: #EF3A46;
+
+  /* Tipografia */
+  --font-hud:  'VT323', 'Cutive Mono', monospace;
+  --font-term: 'IBM Plex Mono', 'Fira Code', monospace;
+  --font-voz:  'Special Elite', 'Courier New', monospace;
+
+  /* Texturas (100% CSS) */
+  --scanlines: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+  --vinheta:   radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+  --ruido: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+
+  /* Glows */
+  --glow-fosfo:  0 0 6px rgba(124,255,63,.55),  0 0 18px rgba(124,255,63,.22);
+  --glow-ambar:  0 0 6px rgba(255,176,0,.50),   0 0 14px rgba(255,176,0,.20);
+  --glow-alerta: 0 0 6px rgba(230,32,32,.60),   0 0 16px rgba(230,32,32,.30);
+
+  /* Tempos */
+  --t-fast: 120ms;
+  --t-med:  300ms;
+  --t-slow: 700ms;
+}
+
+/* ---------- Reset mínimo ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  background: var(--carvao);
+  color: var(--osso);
+  font-family: var(--font-term);
+  position: relative;
+}
+
+::selection { background: var(--fosfo); color: var(--carvao); }
+
+:focus-visible { outline: 2px solid var(--fosfo); outline-offset: 2px; }
+
+/* ---------- Texturas no corpo ---------- */
+body::before { /* scanlines */
+  content: ""; position: fixed; inset: 0; z-index: 60;
+  background: var(--scanlines);
+  opacity: .35; pointer-events: none;
+}
+body::after { /* vinheta */
+  content: ""; position: fixed; inset: 0; z-index: 61;
+  background: var(--vinheta);
+  pointer-events: none;
+}
+
+/* ---------- Layout ---------- */
+.app {
+  max-width: 1280px; margin: 0 auto; padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .app { grid-template-columns: 1fr; }
+}
+
+/* ---------- HUD (topo) ---------- */
+.hud {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  background: var(--tunel);
+  border: 1px solid var(--ferrugem);
+  padding: 8px 14px;
+}
+.hud-titulo {
+  font-family: var(--font-voz);
+  color: var(--radio);
+  font-size: 15px; letter-spacing: 1px;
+  margin: 0;
+}
+.hud-titulo::before { content: "◉ "; color: var(--alerta); }
+.hud-contador {
+  font-family: var(--font-hud);
+  font-size: 22px; color: var(--fosfo);
+  text-shadow: var(--glow-fosfo);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ---------- Mapa-carta ---------- */
+.mapa {
+  position: relative;
+  border: 1px solid var(--ferrugem);
+  background: linear-gradient(160deg, #d8c9a3, var(--papel) 55%, #b3a07c);
+  box-shadow: inset 0 0 40px rgba(60,40,10,.35);
+  padding: 12px;
+}
+.mapa::before { /* sujeira/ruído do papel */
+  content: ""; position: absolute; inset: 0;
+  background: var(--ruido), repeating-linear-gradient(35deg, rgba(80,60,20,.06) 0 3px, transparent 3px 9px);
+  mix-blend-mode: multiply; opacity: .55;
+  pointer-events: none;
+}
+.mapa::after { /* vinheta interna do papel */
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 40% 35%, transparent 50%, rgba(70,50,15,.28) 100%);
+  pointer-events: none;
+}
+.mapa-svg { display: block; width: 100%; height: auto; position: relative; z-index: 1; }
+
+/* Texto dentro do SVG */
+.mapa-svg text {
+  font-family: var(--font-term);
+  font-size: 10.5px;
+  fill: #3b3120;               /* tinta escura sobre o papel */
+  letter-spacing: .3px;
+}
+
+/* ---------- Linhas ---------- */
+.linha { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.linha.l1 { stroke: var(--l1); stroke-width: 7; }
+.linha.l2 { stroke: var(--l2); stroke-width: 6; }
+.linha.l3 { stroke: var(--l3); stroke-width: 6; }
+
+/* ---------- Estações ---------- */
+.estacao { cursor: pointer; }
+.estacao .bolha {
+  fill: var(--papel-claro);
+  stroke: var(--ferrugem);
+  stroke-width: 1.5;
+  transition: stroke var(--t-fast), filter var(--t-fast);
+}
+.estacao:hover .bolha { stroke: var(--osso); filter: drop-shadow(0 0 4px rgba(216,207,188,.8)); }
+
+/* Hubs (integrações) */
+.hub .anel {
+  fill: none;
+  stroke: var(--papel-claro);
+  stroke-width: 2.5;
+  transform-origin: center;
+  animation: pulsar 2.4s ease-in-out infinite;
+}
+.hub .bolha { stroke: var(--radio); stroke-width: 2; }
+
+/* Estados de seleção (convergem com a busca de locais) */
+.estacao.origem .bolha {
+  stroke: var(--fosfo); stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px var(--fosfo));
+}
+.estacao.destino .bolha {
+  stroke: var(--ambar); stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px var(--ambar));
+}
+
+/* Estação bloqueada */
+.estacao .cruz { opacity: 0; transition: opacity var(--t-fast); }
+.estacao.bloqueada { cursor: not-allowed; }
+.estacao.bloqueada .bolha { stroke: var(--alerta); stroke-width: 2.5; filter: drop-shadow(0 0 5px var(--alerta)); }
+.estacao.bloqueada .cruz { opacity: 1; stroke: var(--alerta); stroke-width: 2.5; }
+
+/* Rota final (fio de Ariadne) — o JS preenche o d="..." */
+.rota {
+  fill: none;
+  stroke: var(--fosfo);
+  stroke-width: 3.5;
+  stroke-dasharray: 10 8;
+  filter: drop-shadow(0 0 6px rgba(124,255,63,.6));
+  animation: trilho 1s linear infinite;
+}
+
+/* Dossiê (tooltip no hover) */
+.dossie {
+  display: none;
+  position: absolute; z-index: 20;
+  background: var(--papel);
+  color: #3b3120;
+  border: 1px solid var(--ferrugem);
+  box-shadow: 3px 3px 0 rgba(0,0,0,.4);
+  font-family: var(--font-term); font-size: 12px;
+  padding: 6px 9px; max-width: 200px;
+}
+.dossie strong { display: block; font-size: 13px; }
+
+/* ---------- Selo AUTORIZADO ---------- */
+.selo {
+  position: absolute; z-index: 30;
+  top: 18%; right: 8%;
+  font-family: var(--font-hud);
+  font-size: 26px; letter-spacing: 2px;
+  color: var(--radio);
+  border: 3px solid var(--radio);
+  padding: 4px 14px;
+  transform: rotate(-4deg);
+  box-shadow: 0 0 12px rgba(242,193,78,.35);
+  animation: carimbo .5s ease-out;
+  pointer-events: none;
+}
+@keyframes carimbo {
+  from { transform: rotate(-4deg) scale(2.2); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: rotate(-4deg) scale(1);  opacity: 1; }
+}
+
+/* ---------- Terminais e painel lateral ---------- */
+.painel { display: flex; flex-direction: column; gap: 12px; }
+
+.terminal {
+  background: #141210;
+  border: 1px solid var(--ferrugem);
+  padding: 10px 12px;
+  font-family: var(--font-term); font-size: 13px;
+  color: var(--osso);
+  min-height: 120px;
+}
+.terminal .linha-log { margin: 2px 0; }
+.terminal .linha-log.trace { color: var(--fosfo); }
+.terminal .linha-log.erro  { color: var(--alerta); }
+.terminal .linha-log.radio { color: var(--radio); font-family: var(--font-voz); }
+
+.busca { display: flex; align-items: center; gap: 6px; }
+.busca::before { content: ">"; color: var(--fosfo); font-family: var(--font-hud); font-size: 20px; }
+.busca input {
+  flex: 1;
+  background: var(--tunel-2);
+  border: 1px solid var(--ferrugem);
+  color: var(--osso);
+  font-family: var(--font-term); font-size: 14px;
+  padding: 7px 10px;
+}
+.busca input::placeholder { color: var(--fantasma); }
+.busca input:focus { border-color: var(--fosfo); box-shadow: var(--glow-fosfo); outline: none; }
+
+.dropdown {
+  background: var(--tunel-2);
+  border: 1px solid var(--ferrugem);
+  border-top: none;
+  max-height: 180px; overflow: auto;
+}
+.dropdown-item {
+  padding: 7px 10px; font-size: 13px; cursor: pointer;
+  border-bottom: 1px solid rgba(138,107,74,.35);
+}
+.dropdown-item:hover { background: var(--tunel); color: var(--fosfo); }
+
+/* ---------- Regras R1–R5 (teatro de inferência) ---------- */
+.regras-title {
+  font-family: var(--font-hud); font-size: 18px; color: var(--radio);
+  margin: 4px 0 6px;
+}
+.regra {
+  border-left: 3px solid var(--ferrugem);
+  padding: 5px 9px; margin-bottom: 5px;
+  font-size: 12.5px; color: var(--fantasma);
+  transition: all var(--t-med);
+}
+.regra .justificativa { display: block; color: var(--fantasma); font-size: 11.5px; }
+.regra.disparada {
+  border-left-color: var(--fosfo);
+  color: var(--fosfo);
+  text-shadow: var(--glow-fosfo);
+}
+.regra.disparada .justificativa { color: var(--osso); text-shadow: none; }
+
+/* ---------- Modo Auditoria (prova da matéria) ---------- */
+.rastro-puro { display: none; }
+body.modo-auditoria::before,
+body.modo-auditoria::after { display: none; }
+body.modo-auditoria .mapa::before,
+body.modo-auditoria .mapa::after { display: none; }
+body.modo-auditoria .mapa {
+  background: #f4ecd8;
+  box-shadow: none;
+}
+body.modo-auditoria .rastro-puro {
+  display: block;
+  background: var(--carvao);
+  border: 1px solid var(--ferrugem);
+  font-family: var(--font-term); font-size: 12.5px;
+  white-space: pre-wrap;
+  padding: 10px;
+}
+
+/* ---------- Modo Lanterna (bônus de design; JS define --mx/--my) ---------- */
+body.modo-lanterna .app, body.modo-lanterna .hud { cursor: none; }
+body.modo-lanterna::after {
+  content: "";
+  background: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%),
+              rgba(124,255,63,.10), rgba(0,0,0,.94) 68%);
+}
+
+/* ---------- Animações ---------- */
+@keyframes pulsar {
+  0%, 100% { transform: scale(1);    opacity: .9; }
+  50%      { transform: scale(1.18); opacity: .5; }
+}
+@keyframes trilho {
+  to { stroke-dashoffset: -36; }
+}
+@keyframes piscar {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cursor-blink::after { content: "▍"; color: var(--fosfo); animation: piscar 1s step-end infinite; }
+
+/* ---------- Acessibilidade ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

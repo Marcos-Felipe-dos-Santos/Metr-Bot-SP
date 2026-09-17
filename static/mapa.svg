@@ -1,0 +1,75 @@
+<svg class="mapa-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 800" role="img" aria-label="Mapa do Metrô de São Paulo — Linhas 1-Azul, 2-Verde e 3-Vermelha">
+<style>
+.linha{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.linha.l1{stroke:#0054A6;stroke-width:7}
+.linha.l2{stroke:#009640;stroke-width:6}
+.linha.l3{stroke:#EF3A46;stroke-width:6}
+.estacao .bolha{fill:#E4D8B8;stroke:#8A6B4A;stroke-width:1.5}
+.hub .anel{fill:none;stroke:#F2C14E;stroke-width:2.5}
+.rota{fill:none}
+text{font-family:monospace;font-size:10.5px;fill:#3b3120}
+</style>
+<text x="600" y="38" text-anchor="middle" style="font-size:14px;font-weight:bold">REDE METRÔBOT — SÃO PAULO</text>
+<path class="linha l3" d="M95 390 L130 350 H980 L1010 320"/>
+<path class="linha l1" d="M380 60 V698"/>
+<path class="linha l2" d="M60 560 C90 540 100 540 120 532 C150 520 160 512 180 505 C210 496 220 493 240 490 C270 485 280 481 300 478 C320 475 330 473 345 472 C365 470 370 468 380 466 C390 480 390 485 380 495 C395 515 410 525 425 535 C460 545 480 550 505 558 C540 564 560 566 585 570 C610 574 640 577 665 580 C700 584 720 587 745 590 C780 594 800 597 820 600"/>
+<g>
+<g class="estacao" data-linha="1" data-nome="Tucuruvi"><circle class="bolha" cx="380" cy="60"/><text x="392" y="64">Tucuruvi</text></g>
+<g class="estacao" data-linha="1" data-nome="Parada Inglesa"><circle class="bolha" cx="380" cy="89"/><text x="368" y="93" text-anchor="end">Parada Inglesa</text></g>
+<g class="estacao" data-linha="1" data-nome="Jardim São Paulo"><circle class="bolha" cx="380" cy="118"/><text x="392" y="122">Jardim São Paulo</text></g>
+<g class="estacao" data-linha="1" data-nome="Santana"><circle class="bolha" cx="380" cy="147"/><text x="368" y="151" text-anchor="end">Santana</text></g>
+<g class="estacao" data-linha="1" data-nome="Carandiru"><circle class="bolha" cx="380" cy="176"/><text x="392" y="180">Carandiru</text></g>
+<g class="estacao" data-linha="1" data-nome="Portuguesa-Tietê"><circle class="bolha" cx="380" cy="205"/><text x="368" y="209" text-anchor="end">Portuguesa-Tietê</text></g>
+<g class="estacao" data-linha="1" data-nome="Armênia"><circle class="bolha" cx="380" cy="234"/><text x="392" y="238">Armênia</text></g>
+<g class="estacao" data-linha="1" data-nome="Tiradentes"><circle class="bolha" cx="380" cy="263"/><text x="368" y="267" text-anchor="end">Tiradentes</text></g>
+<g class="estacao" data-linha="1" data-nome="Luz"><circle class="bolha" cx="380" cy="292"/><text x="392" y="296">Luz</text></g>
+<g class="estacao" data-linha="1" data-nome="São Bento"><circle class="bolha" cx="380" cy="321"/><text x="368" y="325" text-anchor="end">São Bento</text></g>
+<g class="estacao hub" data-linha="1" data-nome="Sé" data-hub="true"><circle class="anel" cx="380" cy="350" r="10"/><circle class="bolha" cx="380" cy="350"/><text x="392" y="354">Sé</text></g>
+<g class="estacao" data-linha="1" data-nome="Liberdade"><circle class="bolha" cx="380" cy="379"/><text x="392" y="383">Liberdade</text></g>
+<g class="estacao" data-linha="1" data-nome="São Joaquim"><circle class="bolha" cx="380" cy="408"/><text x="392" y="421">São Joaquim</text></g>
+<g class="estacao" data-linha="1" data-nome="Vergueiro"><circle class="bolha" cx="380" cy="437"/><text x="368" y="441" text-anchor="end">Vergueiro</text></g>
+<g class="estacao hub" data-linha="1" data-nome="Paraíso" data-hub="true"><circle class="anel" cx="380" cy="466" r="10"/><circle class="bolha" cx="380" cy="466"/><text x="392" y="470">Paraíso</text></g>
+<g class="estacao hub" data-linha="1" data-nome="Ana Rosa" data-hub="true"><circle class="anel" cx="380" cy="495" r="10"/><circle class="bolha" cx="380" cy="495"/><text x="392" y="499">Ana Rosa</text></g>
+<g class="estacao" data-linha="1" data-nome="Vila Mariana"><circle class="bolha" cx="380" cy="524"/><text x="392" y="528">Vila Mariana</text></g>
+<g class="estacao" data-linha="1" data-nome="Santa Cruz"><circle class="bolha" cx="380" cy="553"/><text x="368" y="557" text-anchor="end">Santa Cruz</text></g>
+<g class="estacao" data-linha="1" data-nome="Praça da Árvore"><circle class="bolha" cx="380" cy="582"/><text x="392" y="586">Praça da Árvore</text></g>
+<g class="estacao" data-linha="1" data-nome="Saúde"><circle class="bolha" cx="380" cy="611"/><text x="368" y="615" text-anchor="end">Saúde</text></g>
+<g class="estacao" data-linha="1" data-nome="São Judas"><circle class="bolha" cx="380" cy="640"/><text x="392" y="644">São Judas</text></g>
+<g class="estacao" data-linha="1" data-nome="Conceição"><circle class="bolha" cx="380" cy="669"/><text x="368" y="673" text-anchor="end">Conceição</text></g>
+<g class="estacao" data-linha="1" data-nome="Jabaquara"><circle class="bolha" cx="380" cy="698"/><text x="392" y="702">Jabaquara</text></g>
+</g>
+<g>
+<g class="estacao" data-linha="3" data-nome="Palmeiras-Barra Funda"><circle class="bolha" cx="130" cy="350"/><text x="126" y="374" text-anchor="end">Palmeiras-Barra Funda</text></g>
+<g class="estacao" data-linha="3" data-nome="Marechal Deodoro"><circle class="bolha" cx="180" cy="350"/><text x="184" y="392">Marechal Deodoro</text></g>
+<g class="estacao" data-linha="3" data-nome="Santa Cecília"><circle class="bolha" cx="230" cy="350"/><text x="226" y="410" text-anchor="end">Santa Cecília</text></g>
+<g class="estacao" data-linha="3" data-nome="República"><circle class="bolha" cx="280" cy="350"/><text x="276" y="374" text-anchor="end">República</text></g>
+<g class="estacao" data-linha="3" data-nome="Anhangabaú"><circle class="bolha" cx="330" cy="350"/><text x="334" y="392">Anhangabaú</text></g>
+<g class="estacao" data-linha="3" data-nome="Pedro II"><circle class="bolha" cx="430" cy="350"/><text x="426" y="410" text-anchor="end">Pedro II</text></g>
+<g class="estacao" data-linha="3" data-nome="Brás"><circle class="bolha" cx="480" cy="350"/><text x="476" y="374" text-anchor="end">Brás</text></g>
+<g class="estacao" data-linha="3" data-nome="Bresser-Mooca"><circle class="bolha" cx="530" cy="350"/><text x="534" y="392">Bresser-Mooca</text></g>
+<g class="estacao" data-linha="3" data-nome="Belém"><circle class="bolha" cx="580" cy="350"/><text x="576" y="410" text-anchor="end">Belém</text></g>
+<g class="estacao" data-linha="3" data-nome="Tatuapé"><circle class="bolha" cx="630" cy="350"/><text x="626" y="374" text-anchor="end">Tatuapé</text></g>
+<g class="estacao" data-linha="3" data-nome="Carrão"><circle class="bolha" cx="680" cy="350"/><text x="684" y="392">Carrão</text></g>
+<g class="estacao" data-linha="3" data-nome="Penha"><circle class="bolha" cx="730" cy="350"/><text x="726" y="410" text-anchor="end">Penha</text></g>
+<g class="estacao" data-linha="3" data-nome="Vila Matilde"><circle class="bolha" cx="780" cy="350"/><text x="776" y="374" text-anchor="end">Vila Matilde</text></g>
+<g class="estacao" data-linha="3" data-nome="Guilhermina-Esperança"><circle class="bolha" cx="830" cy="350"/><text x="834" y="392">Guilhermina-Esperança</text></g>
+<g class="estacao" data-linha="3" data-nome="Patriarca"><circle class="bolha" cx="880" cy="350"/><text x="876" y="410" text-anchor="end">Patriarca</text></g>
+<g class="estacao" data-linha="3" data-nome="Artur Alvim"><circle class="bolha" cx="930" cy="350"/><text x="926" y="374" text-anchor="end">Artur Alvim</text></g>
+<g class="estacao" data-linha="3" data-nome="Corinthians-Itaquera"><circle class="bolha" cx="980" cy="350"/><text x="984" y="392">Corinthians-Itaquera</text></g>
+</g>
+<g>
+<g class="estacao" data-linha="2" data-nome="Vila Madalena"><circle class="bolha" cx="60" cy="560"/><text x="48" y="546" text-anchor="end">Vila Madalena</text></g>
+<g class="estacao" data-linha="2" data-nome="Sumaré"><circle class="bolha" cx="120" cy="532"/><text x="108" y="518" text-anchor="end">Sumaré</text></g>
+<g class="estacao" data-linha="2" data-nome="Clínicas"><circle class="bolha" cx="180" cy="505"/><text x="168" y="491" text-anchor="end">Clínicas</text></g>
+<g class="estacao" data-linha="2" data-nome="Consolação"><circle class="bolha" cx="240" cy="490"/><text x="228" y="476" text-anchor="end">Consolação</text></g>
+<g class="estacao" data-linha="2" data-nome="Trianon-Masp"><circle class="bolha" cx="300" cy="478"/><text x="288" y="464" text-anchor="end">Trianon-Masp</text></g>
+<g class="estacao" data-linha="2" data-nome="Brigadeiro"><circle class="bolha" cx="345" cy="472"/><text x="333" y="458" text-anchor="end">Brigadeiro</text></g>
+<g class="estacao" data-linha="2" data-nome="Chácara Klabin"><circle class="bolha" cx="425" cy="535"/><text x="437" y="549">Chácara Klabin</text></g>
+<g class="estacao" data-linha="2" data-nome="Santos-Imigrantes"><circle class="bolha" cx="505" cy="558"/><text x="517" y="572">Santos-Imigrantes</text></g>
+<g class="estacao" data-linha="2" data-nome="Alto do Ipiranga"><circle class="bolha" cx="585" cy="570"/><text x="597" y="584">Alto do Ipiranga</text></g>
+<g class="estacao" data-linha="2" data-nome="Sacomã"><circle class="bolha" cx="665" cy="580"/><text x="677" y="594">Sacomã</text></g>
+<g class="estacao" data-linha="2" data-nome="Tamanduateí"><circle class="bolha" cx="745" cy="590"/><text x="757" y="604">Tamanduateí</text></g>
+<g class="estacao" data-linha="2" data-nome="Vila Prudente"><circle class="bolha" cx="820" cy="600"/><text x="832" y="614">Vila Prudente</text></g>
+</g>
+<path class="rota" d="" opacity="0"/>
+</svg>
