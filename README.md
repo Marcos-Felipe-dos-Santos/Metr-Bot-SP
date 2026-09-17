@@ -61,7 +61,7 @@ pode rodar sem a chave.
 > aceita o modo JSON usado pelo intérprete. A própria aula usa
 > `openai/gpt-oss-20b` como `MODELO_GROQ`.
 >
-> O modelo em uso aparece na interface (painel Rádio e log da interpretação)
+> O modelo em uso aparece na interface (painel de narração e status da frase)
 > e no campo `modelo` das respostas. Com uma chave que tenha acesso ao Llama,
 > basta trocar o `GROQ_MODEL`.
 
@@ -78,43 +78,45 @@ obrigatórios estão em `core/tests/test_planejador_e_casos.py`.
 
 ## Como usar
 
-1. **Fale com a Central.** Escreva o pedido, por exemplo *"Estou na Catedral
-   da Sé e quero ir à Pinacoteca, uso cadeira de rodas"*, e clique em
-   **INTERPRETAR**.
-   - O LLM, ou o modo offline, só extrai origem, destino, estações fechadas
-     e acessibilidade.
-   - O backend confere cada nome contra a rede e **recusa nomes
-     inexistentes**, como "Avenida Paulista".
-   - Sem origem e destino válidos, o pedido é rejeitado inteiro, como no PDF.
-2. **Ajuste a seleção.** Os botões ORIGEM, DESTINO, FECHAR, ELEVADOR
-   (manutenção) e LOTADA definem o que o clique no mapa ou a busca `>` faz.
-   Os dois caminhos acendem os mesmos halos:
-   - origem em verde;
-   - destino em âmbar;
-   - estação fechada com cruz vermelha;
-   - elevador parado com anel âmbar tracejado;
-   - estação lotada com anel amarelo.
-3. **Defina o cenário:** "preciso de acessibilidade", "horário de pico" e
-   linha paralisada (1, 2 ou 3).
-4. **Escolha o algoritmo** (BFS, DFS ou a corrida BFS × DFS) e clique em
-   **DESPACHAR**.
-5. **O mapa reproduz o trace:**
-   - BFS em ondas por nível, com a fila (FIFO) no painel Rastro;
-   - DFS com explorador âmbar, backtracking e a pilha (LIFO);
-   - rota final desenhada traço a traço;
-   - selo **AUTORIZADO PELA CENTRAL** ou **TÚNEL OBSTRUÍDO**.
-6. **Leia o resultado:**
-   - **Resumo:** paradas, número de baldeações e onde trocar, tempo estimado
-     (2 min por trecho), alertas, lotação, estações bloqueadas pela lógica e
-     regras disparadas.
-   - **Painel Inferência:** cada regra com a fórmula e a justificativa de
-     cada disparo.
-   - **Painel Rádio:** a narração.
-7. **MODO AUDITORIA:** remove scanlines, vinheta e ruído e mostra em texto
-   puro a **tabela-verdade**, a fila/pilha de cada passo, ordem, visitados,
-   mapa de pais, métricas e todas as inferências com rodada e justificativa.
+A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
 
-![Modo Auditoria com tabela-verdade](docs/screenshots/06_auditoria.png)
+1. **Passo 1 e 2 — origem e destino.** Digite o nome de uma estação ou de um
+   lugar conhecido ("Pinacoteca") ou clique em **Escolher no mapa** e depois
+   na estação. Os dois caminhos acendem os mesmos halos:
+   - origem em verde;
+   - destino em azul;
+   - estação fechada com cruz vermelha;
+   - elevador parado com anel laranja tracejado;
+   - estação lotada com anel amarelo.
+2. **Passo 3 — Opções (avançado).** Só se precisar:
+   - marcar no mapa estação fechada, elevador parado ou estação lotada;
+   - "preciso de acessibilidade" e "estou em horário de pico";
+   - linha paralisada (1-Azul, 2-Verde ou 3-Vermelha);
+   - **pedir em uma frase**: *"estou na Catedral da Sé e quero ir à
+     Pinacoteca, uso cadeira de rodas"*. O LLM (ou o modo offline) só extrai
+     origem, destino, estações fechadas e acessibilidade; o backend confere
+     cada nome e **recusa nomes inexistentes**, como "Avenida Paulista".
+     Sem origem e destino válidos, o pedido é rejeitado inteiro, como no PDF.
+3. **Passo 4 — Traçar rota.** O mapa reproduz o trace:
+   - BFS em ondas por nível;
+   - DFS com explorador laranja e backtracking;
+   - rota final desenhada traço a traço (fio de Ariadne);
+   - a etiqueta do resultado mostra **Rota traçada** ou
+     **Destino inalcançável**.
+4. **Leia o resultado:**
+   - **Resumo da rota:** paradas, baldeações e onde trocar, tempo estimado
+     (2 min por trecho), alertas, lotação, estações bloqueadas pela lógica,
+     regras disparadas e a corrida BFS × DFS;
+   - **Passo a passo:** cada trecho com a linha e as baldeações;
+   - **Narração:** o texto da IA (ou do servidor, quando ela não responde),
+     com "Ouvir de novo" e "Parar".
+5. **Mostrar detalhes da busca** (botão no topo) revela, em texto puro, as
+   **regras aplicadas** com fórmula e justificativa, o **registro passo a
+   passo** da busca, a **tabela-verdade** e o **trace completo**: fila/pilha
+   de cada passo, ordem, visitados, mapa de pais, métricas e todas as
+   inferências com rodada e justificativa.
+
+![Detalhes da busca: regras aplicadas, trace e tabela-verdade](docs/screenshots/06_auditoria.png)
 
 ---
 
@@ -259,7 +261,7 @@ passageiro precisa de acessibilidade e R = o elevador está funcionando.
 - **Sem LLM ou com erro da Groq:** usa `core/interprete.py`, o
   `interpretar_offline` da aula.
 - **O intérprete só preenche os campos:** o passageiro confere e clica em
-  DESPACHAR.
+  "Traçar rota".
 
 **Narrador** (`GET /api/narrar`, SSE):
 - **O LLM recebe apenas o JSON de fatos** calculado pelo core: trechos,
@@ -329,7 +331,7 @@ O front **nunca recalcula** busca nem lógica.
 ├── main.py                    # FastAPI: /api/* e static/
 ├── static/                    # front sem build (HTML + CSS + JS + SVG)
 │   ├── index.html
-│   ├── style.css              # design system "Despachante do Subsolo"
+│   ├── style.css              # tema claro, cores das 3 linhas
 │   ├── app.js                 # só reproduz traces; nenhuma busca/lógica em JS
 │   └── mapa.svg               # mapa-carta
 ├── notebook/                  # ver notebook/README.md
