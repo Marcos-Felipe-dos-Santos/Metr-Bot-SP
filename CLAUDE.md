@@ -51,17 +51,24 @@ reproduz. Trace define:
 - Inferência: regra disparada + fato(s) que a justificaram
 - Final: caminho reconstruído (fio de Ariadne) e métricas de esforço
 
-## Design system (front — "Modo Clean", tema claro)
-Decisão do aluno (substitui o tema escuro "Despachante do Subsolo" da v1):
-interface clara e intuitiva para usuário comum. A identidade antiga só
-sobrevive como um toque (monoespaçada nos rótulos pequenos e nos dados).
+## Design system (front — "Despachante do Subsolo" + layout em 4 passos)
+Híbrido decidido pelo aluno: **identidade retrô escura da v1** (tokens,
+texturas, selo e halos) aplicada ao **layout limpo em 4 passos**. O visual
+mora em static/style.css; o markup e os traces não mudam com o tema.
 
-Paleta (static/style.css):
---fundo:#F7F5F0  --cartao:#FFFFFF  --borda:#E3DFD6  --borda-forte:#CFC9BC
---tinta:#1F2328  --tinta-media:#5A6068  --tinta-fraca:#8A9099
---l1:#0054A6  --l2:#009640  --l3:#EF3A46  (cores das linhas = destaque da UI)
---aviso:#B45309  --erro:#C0262F  + sombras suaves e raio 12px.
-SEM scanlines, vinheta ou textura de papel.
+Paleta (tokens fixos, não mudar):
+--carvao:#0B0A08  --tunel:#1A1815  --tunel-2:#262219  --ferrugem:#8A6B4A
+--osso:#D8CFBC    --papel:#C9B896  --papel-claro:#E4D8B8  --fantasma:#6E675A
+--fosfo:#7CFF3F   --fosfo-dim:#3E7A24  (HUD/BFS/contadores — só estados curtos)
+--ambar:#FFB000   --ambar-dim:#8A5E14  (DFS/avisos/destino)
+--alerta:#E62020  (bloqueada)  --radio:#F2C14E  (narrador/selos/lore)
+
+Tipografia: VT323 (títulos dos passos, botões, HUD e selo), IBM Plex Mono
+(terminal/dados), Special Elite (narração). SEMPRE com fallback monospace.
+Cores oficiais das linhas (#0054A6, #009640, #EF3A46) vivem dentro do
+mapa-carta (papel envelhecido); fora dele, só como contorno das etiquetas de
+linha no passo a passo. Texturas 100% CSS: scanlines (body::before),
+vinheta (body::after), ruído e vinheta interna do papel (.mapa::before/after).
 
 Layout (2 colunas; 1 coluna abaixo de 980px):
 - Esquerda: mapa grande (~60%) com tooltip (#dossie) na estação.
@@ -75,13 +82,17 @@ Layout (2 colunas; 1 coluna abaixo de 980px):
   fonte (nuvem/offline) em #radio-fonte.
 
 Estados visuais (obrigatórios):
-- Estação: repouso branco / hover tooltip (nome+linhas+locais) / origem
-  verde --l2 / destino azul --l1 / fechada cruz --l3 (not-allowed).
+- Estação: repouso papel / hover dossiê (#dossie: nome+linhas+locais) /
+  origem halo --fosfo / destino halo --ambar / bloqueada cruz --alerta
+  (not-allowed); manutenção, lotada e paralisada por traço no contorno.
 - Dois fluxos convergem: clicar no mapa OU buscar → mesmos halos.
-- Rota: fio de Ariadne âmbar (#F59E0B) com halo branco e stroke-dashoffset.
-- "Mostrar detalhes da busca" (#btn-auditoria, body.modo-auditoria) revela
-  #avancado: trace em texto puro (fila/pilha/ordem), regras disparadas e
-  tabela-verdade — prova da matéria com um clique.
+- Rota: fio de Ariadne --fosfo com stroke-dashoffset e trilho animado;
+  selo "AUTORIZADO PELA CENTRAL" / "TÚNEL OBSTRUÍDO" (#selo, --radio,
+  glow âmbar, rotação -3deg) carimbado no cartão de resultado.
+- "Mostrar detalhes da busca" (#btn-auditoria, body.modo-auditoria) derruba
+  scanlines, vinheta e ruído e revela #avancado: trace em texto puro
+  (fila/pilha/ordem), regras disparadas e tabela-verdade — prova da matéria
+  com um clique.
 - Termos de nicho (DESPACHO, RASTRO, RÁDIO, CENTRAL) só no texto puro do
   modo avançado, nunca na interface padrão.
 - Escopo: SEM áudio, SEM partículas, SEM drag/zoom.

@@ -83,10 +83,10 @@ A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
 1. **Passo 1 e 2 — origem e destino.** Digite o nome de uma estação ou de um
    lugar conhecido ("Pinacoteca") ou clique em **Escolher no mapa** e depois
    na estação. Os dois caminhos acendem os mesmos halos:
-   - origem em verde;
-   - destino em azul;
+   - origem com halo verde fosforescente;
+   - destino com halo âmbar;
    - estação fechada com cruz vermelha;
-   - elevador parado com anel laranja tracejado;
+   - elevador parado com anel âmbar tracejado;
    - estação lotada com anel amarelo.
 2. **Passo 3 — Opções (avançado).** Só se precisar:
    - marcar no mapa estação fechada, elevador parado ou estação lotada;
@@ -99,10 +99,10 @@ A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
      Sem origem e destino válidos, o pedido é rejeitado inteiro, como no PDF.
 3. **Passo 4 — Traçar rota.** O mapa reproduz o trace:
    - BFS em ondas por nível;
-   - DFS com explorador laranja e backtracking;
+   - DFS com explorador âmbar e backtracking;
    - rota final desenhada traço a traço (fio de Ariadne);
-   - a etiqueta do resultado mostra **Rota traçada** ou
-     **Destino inalcançável**.
+   - o resultado recebe o selo **AUTORIZADO PELA CENTRAL** ou
+     **TÚNEL OBSTRUÍDO**.
 4. **Leia o resultado:**
    - **Resumo da rota:** paradas, baldeações e onde trocar, tempo estimado
      (2 min por trecho), alertas, lotação, estações bloqueadas pela lógica,
@@ -110,7 +110,8 @@ A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
    - **Passo a passo:** cada trecho com a linha e as baldeações;
    - **Narração:** o texto da IA (ou do servidor, quando ela não responde),
      com "Ouvir de novo" e "Parar".
-5. **Mostrar detalhes da busca** (botão no topo) revela, em texto puro, as
+5. **Mostrar detalhes da busca** (botão no topo) derruba scanlines, vinheta e
+   ruído e revela, em texto puro, as
    **regras aplicadas** com fórmula e justificativa, o **registro passo a
    passo** da busca, a **tabela-verdade** e o **trace completo**: fila/pilha
    de cada passo, ordem, visitados, mapa de pais, métricas e todas as
@@ -331,7 +332,7 @@ O front **nunca recalcula** busca nem lógica.
 ├── main.py                    # FastAPI: /api/* e static/
 ├── static/                    # front sem build (HTML + CSS + JS + SVG)
 │   ├── index.html
-│   ├── style.css              # tema claro, cores das 3 linhas
+│   ├── style.css              # design system "Despachante do Subsolo"
 │   ├── app.js                 # só reproduz traces; nenhuma busca/lógica em JS
 │   └── mapa.svg               # mapa-carta
 ├── notebook/                  # ver notebook/README.md
