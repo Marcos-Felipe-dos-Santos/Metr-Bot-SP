@@ -382,7 +382,7 @@ function ligarInterpretacao() {
         `bloqueadas ${listar(dados.bloqueadas)}`,
       ].filter(Boolean);
       avisar(`Entendido: ${partes.join(" · ")}. Confira e DESPACHE.`, "trace");
-      log(`interpretar (Llama): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
+      log(`interpretar (${dados.modelo}): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
     } catch (erro) {
       avisar(`Sem contato com a Central: ${erro.message}`, "erro");
     } finally {
@@ -653,7 +653,7 @@ function narrar(params) {
       radio.textContent = "";
       log("rádio: Llama caiu no meio — texto parcial descartado, Central offline assume", "erro");
     }
-    fonte.textContent = d.fonte === "llama" ? "· LLAMA" : `· OFFLINE (${d.motivo})`;
+    fonte.textContent = d.fonte === "llama" ? `· LLM ${d.modelo}` : `· OFFLINE (${d.motivo})`;
   });
   es.addEventListener("trecho", (ev) => {
     vigiar();
