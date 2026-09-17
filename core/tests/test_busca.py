@@ -78,8 +78,8 @@ def test_bfs_trace_fila_fifo_e_niveis():
 
 
 def test_bfs_registra_bloqueada_ignorada():
-    t = bfs("Sé", "Liberdade", bloqueadas=["São Bento"])
-    assert t["caminho"] == ["Sé", "Liberdade"]
+    t = bfs("Sé", "Japão-Liberdade", bloqueadas=["São Bento"])
+    assert t["caminho"] == ["Sé", "Japão-Liberdade"]
     assert {"no": "São Bento", "motivo": "bloqueada"} in t["passos"][0]["ignorados"]
     assert "São Bento" not in t["visitados"]
 
@@ -96,9 +96,9 @@ def test_bfs_bloqueio_isola_destino():
 # ---------- DFS ----------
 
 def test_dfs_explora_primeiro_vizinho_e_faz_backtracking():
-    t = dfs("Sé", "Liberdade")
+    t = dfs("Sé", "Japão-Liberdade")
     assert t["encontrado"]
-    assert t["caminho"] == ["Sé", "Liberdade"]
+    assert t["caminho"] == ["Sé", "Japão-Liberdade"]
     # Primeiro vizinho de Sé é São Bento: desce até Tucuruvi e volta.
     assert t["ordem"][:3] == ["Sé", "São Bento", "Luz"]
     assert "Tucuruvi" in t["ordem"]

@@ -63,3 +63,5 @@ Thumbs.db
 # ---------- Deploy (local, não versionar) ----------
 .vercel/
 .netlify/
+# ---------- Material do professor (direitos autorais — não publicar) ----------
+desafio.pdf

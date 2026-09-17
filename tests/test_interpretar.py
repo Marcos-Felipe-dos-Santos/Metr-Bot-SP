@@ -1,4 +1,4 @@
-"""/api/interpretar: o Llama só extrai nomes; o core/ valida; nada é inventado."""
+"""/api/interpretar: o LLM (ou o plano B offline) só extrai nomes; o core/ valida."""
 import json
 
 import httpx
@@ -16,7 +16,7 @@ def com_chave(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "chave-de-teste")
 
 
-def llama_responde(monkeypatch, conteudo):
+def llm_responde(monkeypatch, conteudo):
     recebido = {}
 
     async def falso(mensagem, chave):
@@ -27,7 +27,7 @@ def llama_responde(monkeypatch, conteudo):
     return recebido
 
 
-def llama_falha(monkeypatch, erro):
+def llm_falha(monkeypatch, erro):
     async def falso(mensagem, chave):
         raise erro
 
@@ -38,80 +38,98 @@ def interpretar(mensagem):
     return cliente.post("/api/interpretar", json={"mensagem": mensagem})
 
 
-# ---------- frase válida ----------
+def json_llm(origem=None, destino=None, fechadas=(), acessibilidade=False):
+    return {"origem": origem, "destino": destino, "fechadas": list(fechadas),
+            "acessibilidade": acessibilidade}
+
+
+# ---------- frase válida (LLM) ----------
 
 def test_frase_valida(com_chave, monkeypatch):
     monkeypatch.setenv("GROQ_MODEL", "openai/gpt-oss-120b")
-    recebido = llama_responde(monkeypatch, {
-        "origem": "Shopping Metrô Tucuruvi", "destino": "se", "bloqueadas": ["Luz", " luz "],
-    })
-    r = interpretar("do shopping tucuruvi até a sé sem passar pela Luz")
+    recebido = llm_responde(monkeypatch, json_llm(
+        "Catedral da Sé", "pinacoteca", ["Luz", " luz "], acessibilidade=True))
+    r = interpretar("to na se, bora pra pinacoteca, tô de cadeira de rodas, a Luz fechou")
     assert r.status_code == 200
     assert r.json() == {
+        "fonte": "llm",
         "offline": False,
-        "motivo": None,
         "modelo": "openai/gpt-oss-120b",
-        "origem": "Tucuruvi",
-        "destino": "Sé",
-        "bloqueadas": ["Luz"],
-        "extraido": {"origem": "Shopping Metrô Tucuruvi", "destino": "se",
-                     "bloqueadas": ["Luz", "luz"]},
+        "motivo": None,
+        "origem": "Catedral da Sé",
+        "destino": "Pinacoteca",
+        "fechadas": ["Luz"],
+        "acessibilidade": True,
+        "extraido": {"origem": "Catedral da Sé", "destino": "pinacoteca",
+                     "fechadas": ["Luz", "luz"], "acessibilidade": True},
     }
-    assert recebido == {"mensagem": "do shopping tucuruvi até a sé sem passar pela Luz",
-                        "chave": "chave-de-teste"}
+    assert recebido["chave"] == "chave-de-teste"
 
 
 def test_frase_parcial(com_chave, monkeypatch):
-    llama_responde(monkeypatch, {"origem": None, "destino": "Paraíso", "bloqueadas": []})
+    llm_responde(monkeypatch, json_llm(destino="Paraíso"))
     d = interpretar("quero chegar no Paraíso").json()
-    assert (d["origem"], d["destino"], d["bloqueadas"]) == (None, "Paraíso", [])
+    assert (d["origem"], d["destino"], d["fechadas"]) == (None, "Paraíso", [])
 
 
-def test_prompt_lista_so_nomes_da_rede():
+def test_prompt_lista_52_estacoes_e_locais():
     prompt = main.prompt_interpretacao()
-    assert "Shopping Metrô Tucuruvi" in prompt and "Corinthians-Itaquera" in prompt
-    assert "Atlântida" not in prompt
+    assert "Japão-Liberdade" in prompt and "Patriarca-Vila Ré" in prompt
+    assert "Neo Química Arena" in prompt and "Pinacoteca" in prompt
+    assert "Atlântida" not in prompt and "Avenida Paulista" not in prompt
 
 
-# ---------- estação inexistente ----------
+# ---------- nome inexistente ----------
 
 def test_estacao_inexistente(com_chave, monkeypatch):
-    llama_responde(monkeypatch, {"origem": "Luz", "destino": "Atlântida",
-                                 "bloqueadas": ["Estação Fantasma"]})
-    r = interpretar("da Luz até Atlântida sem a Estação Fantasma")
+    llm_responde(monkeypatch, json_llm("Sé", "Avenida Paulista", ["Estação Fantasma"]))
+    r = interpretar("Quero ir da Sé até a Avenida Paulista")
     assert r.status_code == 422
     assert r.json()["detail"] == {
         "erro": "nomes fora da rede",
-        "invalidos": ["Atlântida", "Estação Fantasma"],
-        "extraido": {"origem": "Luz", "destino": "Atlântida", "bloqueadas": ["Estação Fantasma"]},
+        "invalidos": ["Avenida Paulista", "Estação Fantasma"],
+        "extraido": json_llm("Sé", "Avenida Paulista", ["Estação Fantasma"]),
     }
+
+
+def test_local_nao_pode_ser_fechada(com_chave, monkeypatch):
+    llm_responde(monkeypatch, json_llm("Sé", "Luz", ["Pinacoteca"]))
+    assert interpretar("da Sé à Luz sem a Pinacoteca").status_code == 422
 
 
 @pytest.mark.parametrize("conteudo", [
     "não é json",
-    {"origem": "Luz", "destino": "Sé"},
-    {"origem": "Luz", "destino": "Sé", "bloqueadas": [], "rota": ["Luz", "Sé"]},
-    {"origem": 1, "destino": "Sé", "bloqueadas": []},
-    {"origem": "Luz", "destino": "Sé", "bloqueadas": "Brás"},
+    {"origem": "Luz", "destino": "Sé", "fechadas": []},
+    {**json_llm("Luz", "Sé"), "rota": ["Luz", "Sé"]},
+    {**json_llm("Luz", "Sé"), "origem": 1},
+    {**json_llm("Luz", "Sé"), "fechadas": "Brás"},
+    {**json_llm("Luz", "Sé"), "acessibilidade": "sim"},
     ["Luz", "Sé"],
 ])
 def test_resposta_fora_do_formato(com_chave, monkeypatch, conteudo):
-    llama_responde(monkeypatch, conteudo)
+    llm_responde(monkeypatch, conteudo)
     r = interpretar("da Luz até a Sé")
     assert r.status_code == 502
-    assert "Llama" in r.json()["detail"] or "deve ser" in r.json()["detail"]
+    assert "LLM" in r.json()["detail"] or "deve ser" in r.json()["detail"]
 
 
-# ---------- Llama fora do ar / sem chave ----------
+# ---------- modo offline (sem chave ou LLM fora do ar) ----------
 
-VAZIO = {"origem": None, "destino": None, "bloqueadas": [], "extraido": None}
-
-
-def test_sem_chave(monkeypatch):
+def test_sem_chave_usa_interprete_offline(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
-    r = interpretar("da Luz até a Sé")
+    r = interpretar("Estou na Catedral da Sé e quero ir ao Terminal Rodoviário Jabaquara, uso cadeira de rodas")
     assert r.status_code == 200
-    assert r.json() == {"offline": True, "motivo": "GROQ_API_KEY não configurada", **VAZIO}
+    d = r.json()
+    assert (d["fonte"], d["offline"], d["modelo"], d["motivo"]) == (
+        "offline", True, None, "GROQ_API_KEY não configurada")
+    assert (d["origem"], d["destino"], d["acessibilidade"]) == (
+        "Catedral da Sé", "Terminal Rodoviário Jabaquara", True)
+
+
+def test_offline_nao_inventa(monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    d = interpretar("Quero ir da Sé até a Avenida Paulista").json()
+    assert (d["origem"], d["destino"]) == ("Sé", None)
 
 
 @pytest.mark.parametrize("erro, nome", [
@@ -120,15 +138,17 @@ def test_sem_chave(monkeypatch):
                          response=httpx.Response(401, request=httpx.Request("POST", "https://api.groq.com")),
                          body=None), "AuthenticationError"),
 ])
-def test_llama_fora_do_ar(com_chave, monkeypatch, erro, nome):
-    llama_falha(monkeypatch, erro)
-    r = interpretar("da Luz até a Sé")
+def test_llm_fora_do_ar_cai_no_offline(com_chave, monkeypatch, erro, nome):
+    llm_falha(monkeypatch, erro)
+    r = interpretar("do Mosteiro de São Bento para a São Judas")
     assert r.status_code == 200
-    assert r.json() == {"offline": True, "motivo": f"Llama indisponível ({nome})", **VAZIO}
+    d = r.json()
+    assert (d["fonte"], d["motivo"]) == ("offline", f"LLM indisponível ({nome})")
+    assert (d["origem"], d["destino"]) == ("Mosteiro de São Bento", "São Judas")
 
 
 def test_erro_inesperado_nao_e_mascarado(com_chave, monkeypatch):
-    llama_falha(monkeypatch, KeyError("bug"))
+    llm_falha(monkeypatch, KeyError("bug"))
     with pytest.raises(KeyError):
         interpretar("da Luz até a Sé")
 

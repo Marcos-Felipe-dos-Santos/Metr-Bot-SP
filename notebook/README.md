@@ -1,7 +1,13 @@
 # notebook/
 
-Aqui entra o notebook original (`.ipynb`) do desafio MetrôBot SP 2.0, sem
-alterações, como prova dos requisitos R1–R7.
+O enunciado do Desafio MetrôBot SP 2.0 descreve a entrega como um notebook
+(`AulaPratica01_MetroBot.ipynb`) com ipywidgets, "Executar tudo" e
+`rodar_testes()`.
 
-**Status:** pendente — o arquivo original ainda não foi localizado e será
-adicionado assim que o grupo/professor o fornecer.
+Este repositório implementa o mesmo conteúdo como aplicação FastAPI + HTML:
+- a lógica e a busca ficam em `core/`;
+- os testes rodam com `pytest`, incluindo os 6 casos obrigatórios.
+
+**Status:** o formato final da entrega, e se um notebook é obrigatório, será
+confirmado com o professor. Se for, o notebook entra nesta pasta,
+reaproveitando `core/`.

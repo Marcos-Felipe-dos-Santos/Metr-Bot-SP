@@ -30,6 +30,7 @@
         </div>
       </section>
 
+      <pre id="tabela-verdade" class="rastro-puro" aria-label="Tabela-verdade">Tabela-verdade não carregada.</pre>
       <pre id="rastro-puro" class="rastro-puro" aria-label="Trace em texto puro">Nenhum trace carregado.</pre>
     </main>
 
@@ -40,7 +41,7 @@
         <form id="form-interpretar" class="interpretar">
           <label class="busca">
             <input id="mensagem" type="text" maxlength="500" autocomplete="off"
-                   placeholder="fale com a Central: da Luz até a República sem a Sé"
+                   placeholder="fale com a Central: estou na Catedral da Sé e quero ir à Pinacoteca"
                    aria-label="Pedido em linguagem natural">
           </label>
           <button id="btn-interpretar" class="botao" type="submit">INTERPRETAR</button>
@@ -50,7 +51,9 @@
         <div class="modos" role="group" aria-label="O que o clique/busca define">
           <button type="button" class="botao modo" data-modo="origem" aria-pressed="true">ORIGEM</button>
           <button type="button" class="botao modo" data-modo="destino" aria-pressed="false">DESTINO</button>
-          <button type="button" class="botao modo" data-modo="bloquear" aria-pressed="false">BLOQUEAR</button>
+          <button type="button" class="botao modo" data-modo="fechar" aria-pressed="false">FECHAR</button>
+          <button type="button" class="botao modo" data-modo="manutencao" aria-pressed="false">ELEVADOR</button>
+          <button type="button" class="botao modo" data-modo="lotada" aria-pressed="false">LOTADA</button>
         </div>
 
         <div class="busca-bloco">
@@ -65,8 +68,20 @@
         <dl class="selecao">
           <dt>origem</dt><dd id="sel-origem" class="sel-origem">—</dd>
           <dt>destino</dt><dd id="sel-destino" class="sel-destino">—</dd>
-          <dt>bloqueadas</dt><dd id="sel-bloqueadas" class="sel-bloqueadas">nenhuma</dd>
+          <dt>fechadas</dt><dd id="sel-fechadas" class="sel-fechadas">nenhuma</dd>
+          <dt>elevador parado</dt><dd id="sel-manutencao" class="sel-manutencao">nenhuma</dd>
+          <dt>lotadas</dt><dd id="sel-lotadas" class="sel-lotadas">nenhuma</dd>
         </dl>
+
+        <fieldset class="cenario">
+          <legend>cenário</legend>
+          <label><input id="acessibilidade" type="checkbox"> preciso de acessibilidade</label>
+          <label><input id="horario-pico" type="checkbox"> horário de pico</label>
+          <span class="cenario-rotulo">linha paralisada:</span>
+          <label><input class="paralisar" type="checkbox" value="1"> 1-Azul</label>
+          <label><input class="paralisar" type="checkbox" value="2"> 2-Verde</label>
+          <label><input class="paralisar" type="checkbox" value="3"> 3-Vermelha</label>
+        </fieldset>
 
         <div class="controles">
           <label>algoritmo
