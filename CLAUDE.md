@@ -34,7 +34,8 @@ Faça UMA POR VEZ, aguardando resposta em cada uma. Nunca pule.
                   testes (6 casos exigidos pelo desafio)
 - main.py      -> FastAPI. Endpoints: /api/rota, /api/inferencia,
                   /api/narrar (SSE com fallback offline), /api/estacoes,
-                  /api/locais. Serve static/ como app single-page (sem build).
+                  /api/locais, /api/interpretar (Llama extrai nomes; core valida).
+                  Serve static/ como app single-page (sem build).
 - static/      -> front SEM build: index.html + style.css + app.js
                   + mapa.svg (já existentes conforme design system)
 - notebook/    -> .ipynb original mantido como prova dos requisitos R1–R7
@@ -144,6 +145,13 @@ caminho[], caminho_arestas[{de, para, linhas[]}], metricas{}.
   llama|offline, motivo?, reiniciar?} → trecho{texto}* → fim{fonte}.
   Se o Llama cair no meio, vem um segundo "inicio" com fonte offline e
   reiniciar=true: o front descarta o texto parcial.
+- POST /api/interpretar {mensagem (1–500)} → {offline, motivo, origem,
+  destino, bloqueadas[], extraido}. O Llama (JSON mode, temperatura 0) só
+  EXTRAI nomes {origem, destino, bloqueadas}; core.planejador.validar_nomes
+  confere cada um contra a rede, sem aproximação. Nome fora da rede → 422
+  {erro, invalidos[], extraido}. JSON fora do formato → 502. Sem chave ou
+  GroqError → 200 com offline=true e campos vazios (front usa clique/busca).
+  Não calcula rota: o front aplica os nomes e o usuário DESPACHA (/api/rota).
 - Llama recebe SOMENTE o evento "fatos". Env: GROQ_API_KEY, GROQ_MODEL
   (padrão llama-3.3-70b-versatile). Só erros GroqError caem no offline.
 - Regra do front: /api/rota e /api/narrar recebem OS MESMOS parâmetros

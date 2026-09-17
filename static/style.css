@@ -423,6 +423,12 @@ body.modo-lanterna::after {
 .alg-bfs td:first-child { color: var(--fosfo); }
 .alg-dfs td:first-child { color: var(--ambar); }
 
+.interpretar { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.interpretar .busca { flex: 1 1 100%; }
+.interpretar-status { flex: 1 1 100%; font-size: 12px; margin: 0; min-height: 1em; }
+.interpretar-status.trace { color: var(--fosfo); }
+.interpretar-status.erro { color: var(--alerta); }
+
 /* Modo Auditoria: sem estética, só texto; animações congeladas */
 body.modo-auditoria .rastro-puro { max-height: 70vh; overflow: auto; color: var(--osso); }
 body.modo-auditoria .hub .anel,

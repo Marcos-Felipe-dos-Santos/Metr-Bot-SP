@@ -1,14 +1,5 @@
 <svg class="mapa-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 800" role="img" aria-label="Mapa do Metrô de São Paulo — Linhas 1-Azul, 2-Verde e 3-Vermelha">
-<style>
-.linha{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.linha.l1{stroke:#0054A6;stroke-width:7}
-.linha.l2{stroke:#009640;stroke-width:6}
-.linha.l3{stroke:#EF3A46;stroke-width:6}
-.estacao .bolha{fill:#E4D8B8;stroke:#8A6B4A;stroke-width:1.5}
-.hub .anel{fill:none;stroke:#F2C14E;stroke-width:2.5}
-.rota{fill:none}
-text{font-family:monospace;font-size:10.5px;fill:#3b3120}
-</style>
+<style>.linha{fill:none;stroke-linecap:round;stroke-linejoin:round}.linha.l1{stroke:#0054A6;stroke-width:7}.linha.l2{stroke:#009640;stroke-width:6}.linha.l3{stroke:#EF3A46;stroke-width:6}.estacao .bolha{fill:#E4D8B8;stroke:#8A6B4A;stroke-width:1.5}.hub .anel{fill:none;stroke:#F2C14E;stroke-width:2.5}.rota{fill:none}text{font-family:monospace;font-size:10.5px;fill:#3b3120}</style>
 <text x="600" y="38" text-anchor="middle" style="font-size:14px;font-weight:bold">REDE METRÔBOT — SÃO PAULO</text>
 <path class="linha l3" d="M95 390 L130 350 H980 L1010 320"/>
 <path class="linha l1" d="M380 60 V698"/>
@@ -25,7 +16,7 @@ text{font-family:monospace;font-size:10.5px;fill:#3b3120}
 <g class="estacao" data-linha="1" data-nome="Luz"><circle class="bolha" cx="380" cy="292"/><text x="392" y="296">Luz</text></g>
 <g class="estacao" data-linha="1" data-nome="São Bento"><circle class="bolha" cx="380" cy="321"/><text x="368" y="325" text-anchor="end">São Bento</text></g>
 <g class="estacao hub" data-linha="1" data-nome="Sé" data-hub="true"><circle class="anel" cx="380" cy="350" r="10"/><circle class="bolha" cx="380" cy="350"/><text x="392" y="354">Sé</text></g>
-<g class="estacao" data-linha="1" data-nome="Liberdade"><circle class="bolha" cx="380" cy="379"/><text x="392" y="383">Liberdade</text></g>
+<g class="estacao" data-linha="1" data-nome="Liberdade"><circle class="bolha" cx="380" cy="379"/><text x="368" y="383" text-anchor="end">Liberdade</text></g>
 <g class="estacao" data-linha="1" data-nome="São Joaquim"><circle class="bolha" cx="380" cy="408"/><text x="392" y="421">São Joaquim</text></g>
 <g class="estacao" data-linha="1" data-nome="Vergueiro"><circle class="bolha" cx="380" cy="437"/><text x="368" y="441" text-anchor="end">Vergueiro</text></g>
 <g class="estacao hub" data-linha="1" data-nome="Paraíso" data-hub="true"><circle class="anel" cx="380" cy="466" r="10"/><circle class="bolha" cx="380" cy="466"/><text x="392" y="470">Paraíso</text></g>
@@ -58,12 +49,12 @@ text{font-family:monospace;font-size:10.5px;fill:#3b3120}
 <g class="estacao" data-linha="3" data-nome="Corinthians-Itaquera"><circle class="bolha" cx="980" cy="350"/><text x="984" y="392">Corinthians-Itaquera</text></g>
 </g>
 <g>
-<g class="estacao" data-linha="2" data-nome="Vila Madalena"><circle class="bolha" cx="60" cy="560"/><text x="48" y="546" text-anchor="end">Vila Madalena</text></g>
+<g class="estacao" data-linha="2" data-nome="Vila Madalena"><circle class="bolha" cx="60" cy="560"/><text x="68" y="546" text-anchor="start">Vila Madalena</text></g>
 <g class="estacao" data-linha="2" data-nome="Sumaré"><circle class="bolha" cx="120" cy="532"/><text x="108" y="518" text-anchor="end">Sumaré</text></g>
 <g class="estacao" data-linha="2" data-nome="Clínicas"><circle class="bolha" cx="180" cy="505"/><text x="168" y="491" text-anchor="end">Clínicas</text></g>
 <g class="estacao" data-linha="2" data-nome="Consolação"><circle class="bolha" cx="240" cy="490"/><text x="228" y="476" text-anchor="end">Consolação</text></g>
-<g class="estacao" data-linha="2" data-nome="Trianon-Masp"><circle class="bolha" cx="300" cy="478"/><text x="288" y="464" text-anchor="end">Trianon-Masp</text></g>
-<g class="estacao" data-linha="2" data-nome="Brigadeiro"><circle class="bolha" cx="345" cy="472"/><text x="333" y="458" text-anchor="end">Brigadeiro</text></g>
+<g class="estacao" data-linha="2" data-nome="Trianon-Masp"><circle class="bolha" cx="300" cy="478"/><text x="288" y="448" text-anchor="end">Trianon-Masp</text></g>
+<g class="estacao" data-linha="2" data-nome="Brigadeiro"><circle class="bolha" cx="345" cy="472"/><text x="333" y="466" text-anchor="end">Brigadeiro</text></g>
 <g class="estacao" data-linha="2" data-nome="Chácara Klabin"><circle class="bolha" cx="425" cy="535"/><text x="437" y="549">Chácara Klabin</text></g>
 <g class="estacao" data-linha="2" data-nome="Santos-Imigrantes"><circle class="bolha" cx="505" cy="558"/><text x="517" y="572">Santos-Imigrantes</text></g>
 <g class="estacao" data-linha="2" data-nome="Alto do Ipiranga"><circle class="bolha" cx="585" cy="570"/><text x="597" y="584">Alto do Ipiranga</text></g>

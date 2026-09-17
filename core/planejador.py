@@ -41,6 +41,35 @@ def diagnosticar(origem: str, destino: str, bloqueadas: list[str], trace: dict) 
     return {"obstrucoes": obstrucoes, "trechos": trechos, "baldeacoes": baldeacoes}
 
 
+def validar_nomes(origem: str | None, destino: str | None,
+                  bloqueadas: Iterable[str] = ()) -> dict:
+    """Confere nomes extraídos de linguagem natural contra a rede.
+
+    Devolve as estações canônicas e a lista de nomes que não existem.
+    Nenhum nome é corrigido por aproximação: ou resolve, ou é inválido.
+    """
+    invalidos: list[str] = []
+
+    def resolver(nome: str | None) -> str | None:
+        if nome is None:
+            return None
+        try:
+            return grafo.resolver(nome)
+        except grafo.EstacaoDesconhecida:
+            invalidos.append(nome)
+            return None
+
+    org = resolver(origem)
+    dst = resolver(destino)
+    bloq = [b for b in (resolver(n) for n in bloqueadas) if b is not None]
+    return {
+        "origem": org,
+        "destino": dst,
+        "bloqueadas": list(dict.fromkeys(bloq)),
+        "invalidos": invalidos,
+    }
+
+
 def planejar(origem: str, destino: str, bloqueadas: Iterable[str] = (),
              algoritmo: str = "ambos") -> dict:
     """origem/destino/bloqueadas aceitam nome de estação ou local conhecido."""
