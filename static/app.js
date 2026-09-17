@@ -556,15 +556,18 @@ function carimbar(plano) {
   const principal = Object.values(plano.comparacao)[0];
   const selo = $("#selo");
   if (principal.encontrado) {
-    selo.textContent = "Rota traçada";
+    selo.textContent = "AUTORIZADO PELA CENTRAL";
     selo.classList.remove("negado");
   } else {
-    selo.textContent = principal.motivo.startsWith("sem caminho")
-      ? "Destino inalcançável" : "Não foi possível traçar";
+    selo.textContent = principal.motivo.startsWith("sem caminho") ? "TÚNEL OBSTRUÍDO" : "DESPACHO NEGADO";
     selo.classList.add("negado");
   }
   selo.hidden = false;
   $("#resultado").hidden = false;
+  // reinicia a animação do carimbo a cada despacho
+  selo.style.animation = "none";
+  selo.getBoundingClientRect();
+  selo.style.animation = "";
 }
 
 /** Itinerário legível: vem pronto do diagnóstico do backend, nada é recalculado. */
