@@ -1,4 +1,4 @@
-/* MetrôBot SP — Despachante do Subsolo (front v1)
+/* MetrôBot SP — front (tema claro, 4 passos)
  *
  * Regra de ouro: este arquivo NÃO calcula rota nem inferência.
  * Ele só reproduz os traces vindos de /api (core/ em Python).
@@ -25,6 +25,7 @@ const estado = {
   pular: false,
   plano: null,
   radio: null,         // EventSource ativo
+  params: null,        // último pedido (para repetir a narração)
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -182,11 +183,20 @@ function limparReproducao() {
 
 // ------------------------------------------------------------ seleção (dois fluxos, um só destino)
 
+const ALVO_DO_MODO = {
+  origem: "a origem",
+  destino: "o destino",
+  fechar: "uma estação fechada",
+  manutencao: "uma estação com elevador parado",
+  lotada: "uma estação lotada",
+};
+
 function definirModo(modo) {
   estado.modo = modo;
   for (const b of document.querySelectorAll(".modo")) {
     b.setAttribute("aria-pressed", String(b.dataset.modo === modo));
   }
+  $("#dica-alvo").textContent = ALVO_DO_MODO[modo];
 }
 
 const LISTA_DO_MODO = { fechar: "fechadas", manutencao: "manutencao", lotada: "lotadas" };
@@ -250,6 +260,11 @@ function atualizarSelecao() {
   }
   $("#sel-origem").textContent = estado.origem ? rotulo(estado.origem) : "—";
   $("#sel-destino").textContent = estado.destino ? rotulo(estado.destino) : "—";
+  // O campo mostra a escolha atual (sem atrapalhar quem está digitando nele).
+  for (const [seletor, nome] of [["#busca", estado.origem], ["#busca-destino", estado.destino]]) {
+    const campo = $(seletor);
+    if (campo && campo !== document.activeElement) campo.value = nome ?? "";
+  }
   $("#sel-fechadas").textContent = estado.fechadas.join(", ") || "nenhuma";
   $("#sel-manutencao").textContent = estado.manutencao.join(", ") || "nenhuma";
   $("#sel-lotadas").textContent = estado.lotadas.join(", ") || "nenhuma";
@@ -324,9 +339,10 @@ function opcoesBusca() {
   return [...locais, ...estacoes];
 }
 
-function ligarBusca() {
-  const input = $("#busca");
-  const drop = $("#dropdown");
+/** Um campo de busca por passo; o campo só diz PARA ONDE vai o nome escolhido. */
+function ligarBusca(seletorInput, seletorDrop, modoDoCampo) {
+  const input = $(seletorInput);
+  const drop = $(seletorDrop);
   let itens = [];
   let ativo = -1;
 
@@ -339,11 +355,13 @@ function ligarBusca() {
     [...drop.children].forEach((c, i) => c.classList.toggle("ativo", i === ativo));
   };
   const aplicar = (item) => {
+    definirModo(modoDoCampo);
     escolher(item.rotulo);
     input.value = "";
     fechar();
   };
 
+  input.addEventListener("focus", () => definirModo(modoDoCampo));
   input.addEventListener("input", () => {
     const termo = normalizar(input.value);
     drop.replaceChildren();
@@ -398,7 +416,7 @@ function ligarInterpretacao() {
     const mensagem = $("#mensagem").value.trim();
     if (!mensagem) return;
     botao.disabled = true;
-    avisar("Central ouvindo…", "");
+    avisar("Lendo a frase…", "");
     try {
       const resp = await fetch("/api/interpretar", {
         method: "POST",
@@ -413,7 +431,7 @@ function ligarInterpretacao() {
       }
       if (!resp.ok) {
         const detalhe = typeof dados.detail === "string" ? dados.detail : `HTTP ${resp.status}`;
-        avisar(`Central não entendeu: ${detalhe}`, "erro");
+        avisar(`O servidor não entendeu: ${detalhe}`, "erro");
         log(`interpretar: ${detalhe}`, "erro");
         return;
       }
@@ -437,10 +455,10 @@ function ligarInterpretacao() {
         `fechadas ${listar(dados.fechadas)}`,
         `acessibilidade ${dados.acessibilidade ? "sim" : "não"}`,
       ];
-      avisar(`Entendido via ${fonte}: ${partes.join(" · ")}. Confira e DESPACHE.`, "trace");
+      avisar(`Entendido via ${fonte}: ${partes.join(" · ")}. Confira e clique em "Traçar rota".`, "trace");
       log(`interpretar (${fonte}): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
     } catch (erro) {
-      avisar(`Sem contato com a Central: ${erro.message}`, "erro");
+      avisar(`Sem contato com o servidor: ${erro.message}`, "erro");
     } finally {
       botao.disabled = false;
     }
@@ -538,17 +556,48 @@ function carimbar(plano) {
   const principal = Object.values(plano.comparacao)[0];
   const selo = $("#selo");
   if (principal.encontrado) {
-    selo.textContent = "AUTORIZADO PELA CENTRAL";
+    selo.textContent = "Rota traçada";
     selo.classList.remove("negado");
   } else {
-    selo.textContent = principal.motivo.startsWith("sem caminho") ? "TÚNEL OBSTRUÍDO" : "DESPACHO NEGADO";
+    selo.textContent = principal.motivo.startsWith("sem caminho")
+      ? "Destino inalcançável" : "Não foi possível traçar";
     selo.classList.add("negado");
   }
   selo.hidden = false;
-  // reinicia a animação do carimbo
-  selo.style.animation = "none";
-  selo.getBoundingClientRect();
-  selo.style.animation = "";
+  $("#resultado").hidden = false;
+}
+
+/** Itinerário legível: vem pronto do diagnóstico do backend, nada é recalculado. */
+function mostrarPassos(plano) {
+  const lista = $("#passos");
+  lista.replaceChildren();
+  const principal = Object.values(plano.comparacao)[0];
+  if (!principal.encontrado) {
+    const li = el("li", "vazio", plano.diagnostico.obstrucoes.length
+      ? `Sem caminho: ${plano.diagnostico.obstrucoes.join(", ")} bloqueia(m) a passagem.`
+      : "Sem caminho entre as duas estações.");
+    lista.appendChild(li);
+    return;
+  }
+  const baldeacaoEm = new Map(plano.diagnostico.baldeacoes.map((b) => [b.estacao, b]));
+  for (const t of plano.diagnostico.trechos) {
+    const li = el("li");
+    li.appendChild(el("span", "", `${t.de} → ${t.ate} · ${t.paradas} parada(s)`));
+    const tag = el("span", `linha-tag l${t.linha}`, `Linha ${nomeDaLinha(t.linha)}`);
+    li.appendChild(tag);
+    lista.appendChild(li);
+    const b = baldeacaoEm.get(t.ate);
+    if (b) {
+      lista.appendChild(el("li", "baldeacao",
+        `Baldeação na ${b.estacao}: Linha ${nomeDaLinha(b.de_linha)} → Linha ${nomeDaLinha(b.para_linha)}`));
+    }
+  }
+  lista.appendChild(el("li", "vazio",
+    `Chegada: ${plano.destino} · ${principal.paradas} parada(s) no total.`));
+}
+
+function nomeDaLinha(id) {
+  return estado.rede.linhas.find((l) => l.id === id).nome;
 }
 
 function mostrarCorrida(plano) {
@@ -661,7 +710,7 @@ function mostrarInferencia(inf) {
         `${i.fato.texto} ⇐ ${i.justificativa.map((j) => j.texto).join(" ∧ ")}`));
     }
     if (d.length > mostrar.length) {
-      div.appendChild(el("span", "justificativa", `… +${d.length - mostrar.length} (ver Modo Auditoria)`));
+      div.appendChild(el("span", "justificativa", `… +${d.length - mostrar.length} (ver o trace completo abaixo)`));
     }
     if (!d.length) div.appendChild(el("span", "justificativa", "não disparou"));
     box.appendChild(div);
@@ -690,6 +739,8 @@ function pararRadio() {
     clearTimeout(estado.radio.relogio);
     estado.radio = null;
   }
+  const parar = $("#btn-parar");
+  if (parar) parar.disabled = true;
 }
 
 function narrar(params) {
@@ -699,7 +750,9 @@ function narrar(params) {
   radio.textContent = "";
   radio.classList.add("cursor-blink");
   radio.classList.remove("erro");
-  fonte.textContent = "· sintonizando";
+  fonte.textContent = "· preparando";
+  $("#btn-parar").disabled = false;
+  $("#btn-narrar").disabled = false;
 
   const qs = new URLSearchParams();
   for (const [chave, valor] of Object.entries(params)) {
@@ -719,11 +772,12 @@ function narrar(params) {
     radio.classList.add("erro");
     radio.textContent += (radio.textContent ? "\n" : "") + `[SINAL PERDIDO] ${msg}`;
     fonte.textContent = "· erro";
-    log(`rádio: ${msg}`, "erro");
+    $("#btn-parar").disabled = true;
+    log(`narração: ${msg}`, "erro");
   };
   const vigiar = () => {
     clearTimeout(sessao.relogio);
-    sessao.relogio = setTimeout(() => falhar("sem resposta da Central (timeout)"), NARRACAO_TIMEOUT_MS);
+    sessao.relogio = setTimeout(() => falhar("sem resposta do servidor (tempo esgotado)"), NARRACAO_TIMEOUT_MS);
   };
   const dados = (ev) => JSON.parse(ev.data);
   vigiar();
@@ -740,9 +794,11 @@ function narrar(params) {
     const d = dados(ev);
     if (d.reiniciar) {
       radio.textContent = "";
-      log("rádio: LLM caiu no meio — texto parcial descartado, Central offline assume", "erro");
+      log("narração: a IA caiu no meio — texto parcial descartado, o servidor assume", "erro");
     }
-    fonte.textContent = d.fonte === "llama" ? `· LLM ${d.modelo}` : `· OFFLINE (${d.motivo})`;
+    fonte.textContent = d.fonte === "llama"
+      ? `· IA na nuvem · LLM ${d.modelo}`
+      : `· gerada no servidor · OFFLINE (${d.motivo})`;
   });
   es.addEventListener("trecho", (ev) => {
     vigiar();
@@ -753,6 +809,7 @@ function narrar(params) {
     es.close();
     clearTimeout(sessao.relogio);
     radio.classList.remove("cursor-blink");
+    $("#btn-parar").disabled = true;
     if (estado.radio === sessao) estado.radio = null;
   });
   // EventSource reconecta sozinho ao fechar: fim sem "fim" é erro, nunca espera.
@@ -776,11 +833,13 @@ async function despachar() {
     lotadas: [...estado.lotadas],
     algoritmo: $("#algoritmo").value,
   };
+  estado.params = params;
   pararRadio();
   limparReproducao();
   $("#log").replaceChildren();
-  $("#radio").textContent = "Aguardando o fim da reprodução.";
+  $("#radio").textContent = "A narração começa quando a animação terminar.";
   $("#radio-fonte").textContent = "";
+  $("#btn-narrar").disabled = true;
   $("#btn-pular").disabled = false;
   hud();
   log(`despacho: ${params.origem} → ${params.destino} · fechadas ${listar(params.fechadas)} · ${params.algoritmo}`);
@@ -820,11 +879,12 @@ async function despachar() {
       paradas: principal.metricas.paradas });
     carimbar(plano);
     mostrarCorrida(plano);
+    mostrarPassos(plano);
     narrar(params);
   } catch (erro) {
     if (erro instanceof Cancelado) return;
     log(String(erro.message || erro), "erro");
-    $("#radio").textContent = "Despacho não concluído.";
+    $("#radio").textContent = "Não foi possível traçar a rota.";
   } finally {
     if (execucao === estado.execucao) $("#btn-pular").disabled = true;
   }
@@ -839,17 +899,25 @@ function limparTudo() {
   estado.manutencao = [];
   estado.lotadas = [];
   estado.plano = null;
+  estado.params = null;
   $("#acessibilidade").checked = false;
   $("#horario-pico").checked = false;
   document.querySelectorAll(".paralisar").forEach((c) => { c.checked = false; });
+  $("#busca").value = "";
+  $("#busca-destino").value = "";
+  $("#interpretar-status").textContent = "";
   definirModo("origem");
   limparReproducao();
   atualizarSelecao();
   hud();
   $("#log").replaceChildren();
-  $("#radio").textContent = "Aguardando despacho.";
+  $("#resultado").hidden = true;
+  $("#corrida").replaceChildren();
+  $("#passos").replaceChildren(el("li", "vazio", "Nenhuma rota traçada ainda."));
+  $("#radio").textContent = "A narração aparece aqui depois de traçar a rota.";
   $("#radio-fonte").textContent = "";
   $("#btn-pular").disabled = true;
+  $("#btn-narrar").disabled = true;
 }
 
 // ------------------------------------------------------------ início
@@ -861,9 +929,18 @@ async function iniciar() {
   $("#btn-despachar").addEventListener("click", despachar);
   $("#btn-pular").addEventListener("click", () => { estado.pular = true; });
   $("#btn-limpar").addEventListener("click", limparTudo);
+  $("#btn-narrar").addEventListener("click", () => {
+    if (estado.params && estado.plano) narrar(estado.params);
+  });
+  $("#btn-parar").addEventListener("click", () => {
+    pararRadio();
+    $("#radio").classList.remove("cursor-blink");
+    $("#radio-fonte").textContent = "· narração interrompida";
+  });
   $("#btn-auditoria").addEventListener("click", (ev) => {
     const ligado = document.body.classList.toggle("modo-auditoria");
     ev.currentTarget.setAttribute("aria-pressed", String(ligado));
+    ev.currentTarget.textContent = ligado ? "Esconder detalhes da busca" : "Mostrar detalhes da busca";
   });
 
   try {
@@ -877,13 +954,14 @@ async function iniciar() {
     mostrarTabelaVerdade();
     conferirMapa();
     ligarMapa(svg);
-    ligarBusca();
+    ligarBusca("#busca", "#dropdown", "origem");
+    ligarBusca("#busca-destino", "#dropdown-destino", "destino");
     ligarInterpretacao();
     atualizarSelecao();
-    $("#status-api").textContent = "CENTRAL ONLINE";
+    $("#status-api").textContent = "conectado";
     $("#status-api").classList.add("ok");
   } catch (erro) {
-    $("#status-api").textContent = "CENTRAL FORA DO AR";
+    $("#status-api").textContent = "servidor fora do ar";
     $("#status-api").classList.add("falha");
     log(String(erro.message || erro), "erro");
   }

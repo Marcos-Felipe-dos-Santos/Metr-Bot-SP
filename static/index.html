@@ -3,126 +3,197 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Despachante do Subsolo — MetrôBot SP</title>
+  <title>MetrôBot SP — planejador de rotas</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="app">
-    <header class="hud">
-      <h1 class="hud-titulo">DESPACHANTE DO SUBSOLO · MetrôBot SP</h1>
-      <span id="status-api" class="hud-status">conectando…</span>
-      <span id="hud-contador" class="hud-contador">VISIT 00 · PASSO 000 · PARADAS --</span>
-      <button id="btn-auditoria" class="botao" type="button" aria-pressed="false">MODO AUDITORIA</button>
+    <header class="topo">
+      <div class="marca">
+        <span class="marca-icone" aria-hidden="true">M</span>
+        <div>
+          <h1>MetrôBot SP</h1>
+          <p class="marca-sub">Planejador de rotas do metrô de São Paulo</p>
+        </div>
+      </div>
+      <div class="topo-direita">
+        <span id="status-api" class="status">conectando…</span>
+        <button id="btn-auditoria" class="btn btn-fantasma" type="button" aria-pressed="false"
+                title="Mostra o passo a passo do algoritmo, as regras aplicadas e a tabela-verdade">
+          Mostrar detalhes da busca
+        </button>
+      </div>
     </header>
 
-    <main class="coluna-mapa">
-      <section class="mapa" id="mapa" aria-label="Mapa-carta da rede">
-        <div id="mapa-svg-host"></div>
-        <div id="dossie" class="dossie" role="tooltip"></div>
-        <div id="selo" class="selo" hidden>AUTORIZADO PELA CENTRAL</div>
-      </section>
-
-      <section class="corrida terminal" aria-label="Corrida BFS × DFS">
-        <p class="regras-title">CORRIDA BFS × DFS</p>
-        <div id="corrida" class="corrida-corpo">
-          <p class="linha-log">Nenhum despacho ainda.</p>
+    <main class="conteudo">
+      <section class="cartao cartao-mapa" aria-label="Mapa da rede">
+        <div class="mapa" id="mapa">
+          <div id="mapa-svg-host"></div>
+          <div id="dossie" class="dossie" role="tooltip"></div>
         </div>
+        <p class="dica">Clique numa estação do mapa para definir <strong id="dica-alvo">a origem</strong>.</p>
       </section>
 
-      <pre id="tabela-verdade" class="rastro-puro" aria-label="Tabela-verdade">Tabela-verdade não carregada.</pre>
-      <pre id="rastro-puro" class="rastro-puro" aria-label="Trace em texto puro">Nenhum trace carregado.</pre>
+      <aside class="painel">
+        <section class="cartao passo" aria-label="Passo 1: origem">
+          <h2 class="passo-titulo"><span class="passo-num">1</span> Origem
+            <small>onde você está</small></h2>
+          <div class="campo">
+            <input id="busca" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="estação ou lugar (ex.: Pinacoteca)"
+                   aria-label="Buscar estação ou lugar de origem"
+                   aria-controls="dropdown" aria-expanded="false"
+                   title="Digite o nome de uma estação ou de um lugar conhecido">
+            <div id="dropdown" class="dropdown" role="listbox" hidden></div>
+          </div>
+          <div class="passo-rodape">
+            <button type="button" class="btn btn-mini modo" data-modo="origem" aria-pressed="true"
+                    title="O próximo clique no mapa define a origem">Escolher no mapa</button>
+            <span class="escolhido" id="sel-origem">—</span>
+          </div>
+        </section>
+
+        <section class="cartao passo" aria-label="Passo 2: destino">
+          <h2 class="passo-titulo"><span class="passo-num">2</span> Destino
+            <small>para onde quer ir</small></h2>
+          <div class="campo">
+            <input id="busca-destino" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="estação ou lugar (ex.: Neo Química Arena)"
+                   aria-label="Buscar estação ou lugar de destino"
+                   aria-controls="dropdown-destino" aria-expanded="false"
+                   title="Digite o nome de uma estação ou de um lugar conhecido">
+            <div id="dropdown-destino" class="dropdown" role="listbox" hidden></div>
+          </div>
+          <div class="passo-rodape">
+            <button type="button" class="btn btn-mini modo" data-modo="destino" aria-pressed="false"
+                    title="O próximo clique no mapa define o destino">Escolher no mapa</button>
+            <span class="escolhido" id="sel-destino">—</span>
+          </div>
+        </section>
+
+        <details class="cartao passo opcoes">
+          <summary class="passo-titulo"><span class="passo-num">3</span> Opções
+            <small>avançado — só se precisar</small></summary>
+
+          <div class="opcoes-corpo">
+            <p class="ajuda">Escolha o que o clique no mapa vai marcar:</p>
+            <div class="modos" role="group" aria-label="O que o clique no mapa marca">
+              <button type="button" class="btn btn-mini modo" data-modo="fechar" aria-pressed="false"
+                      title="Marca a estação como fechada: a rota tem de desviar">Estação fechada</button>
+              <button type="button" class="btn btn-mini modo" data-modo="manutencao" aria-pressed="false"
+                      title="Marca elevador parado: importa para quem precisa de acessibilidade">Elevador parado</button>
+              <button type="button" class="btn btn-mini modo" data-modo="lotada" aria-pressed="false"
+                      title="Marca a estação como lotada: gera aviso em horário de pico">Estação lotada</button>
+            </div>
+
+            <dl class="selecao">
+              <dt>fechadas</dt><dd id="sel-fechadas" class="sel-fechadas">nenhuma</dd>
+              <dt>elevador parado</dt><dd id="sel-manutencao" class="sel-manutencao">nenhuma</dd>
+              <dt>lotadas</dt><dd id="sel-lotadas" class="sel-lotadas">nenhuma</dd>
+            </dl>
+
+            <label class="opcao" title="A rota evita estações com elevador parado">
+              <input id="acessibilidade" type="checkbox"> Preciso de acessibilidade
+            </label>
+            <label class="opcao" title="Liga os avisos de lotação">
+              <input id="horario-pico" type="checkbox"> Estou em horário de pico
+            </label>
+
+            <p class="ajuda">Linha paralisada (nenhum trem circula):</p>
+            <div class="linhas-paralisadas">
+              <label class="opcao l1"><input class="paralisar" type="checkbox" value="1"> Linha 1-Azul</label>
+              <label class="opcao l2"><input class="paralisar" type="checkbox" value="2"> Linha 2-Verde</label>
+              <label class="opcao l3"><input class="paralisar" type="checkbox" value="3"> Linha 3-Vermelha</label>
+            </div>
+
+            <form id="form-interpretar" class="interpretar">
+              <label class="ajuda" for="mensagem">Ou peça em uma frase:</label>
+              <input id="mensagem" type="text" maxlength="500" autocomplete="off"
+                     placeholder="estou na Catedral da Sé e quero ir à Pinacoteca">
+              <button id="btn-interpretar" class="btn btn-mini" type="submit"
+                      title="A IA só entende a frase; quem calcula a rota é o algoritmo">Entender frase</button>
+              <p id="interpretar-status" class="interpretar-status"></p>
+            </form>
+          </div>
+        </details>
+
+        <section class="cartao passo passo-acao" aria-label="Passo 4: traçar a rota">
+          <h2 class="passo-titulo"><span class="passo-num">4</span> Pronto?</h2>
+          <button id="btn-despachar" class="btn btn-primario" type="button" disabled
+                  title="Calcula a rota no servidor e mostra o caminho no mapa">Traçar rota</button>
+          <div class="acoes-secundarias">
+            <button id="btn-pular" class="btn btn-mini" type="button" disabled
+                    title="Vai direto ao resultado">Pular animação</button>
+            <button id="btn-limpar" class="btn btn-mini" type="button"
+                    title="Apaga origem, destino e todas as opções">Limpar</button>
+          </div>
+        </section>
+
+        <section id="resultado" class="cartao resultado" aria-label="Resumo da rota" hidden>
+          <div class="resultado-topo">
+            <h2 class="cartao-titulo">Resumo da rota</h2>
+            <span id="selo" class="selo" hidden>Rota traçada</span>
+          </div>
+          <div id="corrida" class="corrida-corpo"></div>
+          <h3 class="sub-titulo">Passo a passo</h3>
+          <ol id="passos" class="passos"><li class="vazio">Nenhuma rota traçada ainda.</li></ol>
+        </section>
+
+        <section class="cartao chat" aria-label="Narração da rota">
+          <div class="resultado-topo">
+            <h2 class="cartao-titulo">Narração</h2>
+            <span id="radio-fonte" class="chat-fonte"></span>
+          </div>
+          <p id="radio" class="balao narracao">A narração aparece aqui depois de traçar a rota.</p>
+          <div class="acoes-secundarias">
+            <button id="btn-narrar" class="btn btn-mini" type="button" disabled
+                    title="Pede a narração de novo">Ouvir de novo</button>
+            <button id="btn-parar" class="btn btn-mini" type="button" disabled
+                    title="Interrompe a narração">Parar</button>
+          </div>
+        </section>
+      </aside>
     </main>
 
-    <aside class="painel">
-      <section class="terminal" aria-label="Despacho">
-        <p class="regras-title">DESPACHO</p>
+    <section id="avancado" class="avancado" aria-label="Detalhes da busca">
+      <div class="avancado-topo">
+        <h2 class="cartao-titulo">Detalhes da busca</h2>
+        <span id="hud-contador" class="contador">VISIT 00 · PASSO 000 · PARADAS --</span>
+        <label class="controle">algoritmo
+          <select id="algoritmo" title="BFS explora por níveis; DFS vai fundo e volta">
+            <option value="ambos">BFS × DFS</option>
+            <option value="bfs">BFS</option>
+            <option value="dfs">DFS</option>
+          </select>
+        </label>
+        <label class="controle">velocidade da animação
+          <select id="ritmo">
+            <option value="2">lenta</option>
+            <option value="1" selected>normal</option>
+            <option value="0.4">rápida</option>
+          </select>
+        </label>
+      </div>
 
-        <form id="form-interpretar" class="interpretar">
-          <label class="busca">
-            <input id="mensagem" type="text" maxlength="500" autocomplete="off"
-                   placeholder="fale com a Central: estou na Catedral da Sé e quero ir à Pinacoteca"
-                   aria-label="Pedido em linguagem natural">
-          </label>
-          <button id="btn-interpretar" class="botao" type="submit">INTERPRETAR</button>
-          <p id="interpretar-status" class="linha-log interpretar-status"></p>
-        </form>
+      <div class="avancado-grade">
+        <section class="cartao" aria-label="Regras aplicadas">
+          <h3 class="sub-titulo">Regras aplicadas</h3>
+          <p id="inferencia-resumo" class="ajuda">Base lógica ainda não consultada.</p>
+          <div id="regras"></div>
+        </section>
 
-        <div class="modos" role="group" aria-label="O que o clique/busca define">
-          <button type="button" class="botao modo" data-modo="origem" aria-pressed="true">ORIGEM</button>
-          <button type="button" class="botao modo" data-modo="destino" aria-pressed="false">DESTINO</button>
-          <button type="button" class="botao modo" data-modo="fechar" aria-pressed="false">FECHAR</button>
-          <button type="button" class="botao modo" data-modo="manutencao" aria-pressed="false">ELEVADOR</button>
-          <button type="button" class="botao modo" data-modo="lotada" aria-pressed="false">LOTADA</button>
-        </div>
+        <section class="cartao" aria-label="Registro da busca">
+          <h3 class="sub-titulo">Registro passo a passo</h3>
+          <div id="log" class="log" aria-live="polite"></div>
+        </section>
+      </div>
 
-        <div class="busca-bloco">
-          <label class="busca">
-            <input id="busca" type="text" autocomplete="off" spellcheck="false"
-                   placeholder="estação ou local conhecido" aria-label="Buscar estação ou local"
-                   aria-controls="dropdown" aria-expanded="false">
-          </label>
-          <div id="dropdown" class="dropdown" role="listbox" hidden></div>
-        </div>
-
-        <dl class="selecao">
-          <dt>origem</dt><dd id="sel-origem" class="sel-origem">—</dd>
-          <dt>destino</dt><dd id="sel-destino" class="sel-destino">—</dd>
-          <dt>fechadas</dt><dd id="sel-fechadas" class="sel-fechadas">nenhuma</dd>
-          <dt>elevador parado</dt><dd id="sel-manutencao" class="sel-manutencao">nenhuma</dd>
-          <dt>lotadas</dt><dd id="sel-lotadas" class="sel-lotadas">nenhuma</dd>
-        </dl>
-
-        <fieldset class="cenario">
-          <legend>cenário</legend>
-          <label><input id="acessibilidade" type="checkbox"> preciso de acessibilidade</label>
-          <label><input id="horario-pico" type="checkbox"> horário de pico</label>
-          <span class="cenario-rotulo">linha paralisada:</span>
-          <label><input class="paralisar" type="checkbox" value="1"> 1-Azul</label>
-          <label><input class="paralisar" type="checkbox" value="2"> 2-Verde</label>
-          <label><input class="paralisar" type="checkbox" value="3"> 3-Vermelha</label>
-        </fieldset>
-
-        <div class="controles">
-          <label>algoritmo
-            <select id="algoritmo">
-              <option value="ambos">BFS × DFS</option>
-              <option value="bfs">BFS</option>
-              <option value="dfs">DFS</option>
-            </select>
-          </label>
-          <label>ritmo
-            <select id="ritmo">
-              <option value="2">lento</option>
-              <option value="1" selected>normal</option>
-              <option value="0.4">rápido</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="acoes">
-          <button id="btn-despachar" class="botao botao-primario" type="button" disabled>DESPACHAR</button>
-          <button id="btn-pular" class="botao" type="button" disabled>PULAR ANIMAÇÃO</button>
-          <button id="btn-limpar" class="botao" type="button">LIMPAR</button>
-        </div>
-      </section>
-
-      <section class="terminal" aria-label="Rastro da busca">
-        <p class="regras-title">RASTRO</p>
-        <div id="log" class="log" aria-live="polite"></div>
-      </section>
-
-      <section class="terminal" aria-label="Rádio da Central">
-        <p class="regras-title">RÁDIO <span id="radio-fonte" class="radio-fonte"></span></p>
-        <p id="radio" class="linha-log radio narracao">Aguardando despacho.</p>
-      </section>
-
-      <section class="terminal" aria-label="Teatro de inferência">
-        <p class="regras-title">INFERÊNCIA</p>
-        <p id="inferencia-resumo" class="linha-log">Base lógica ainda não consultada.</p>
-        <div id="regras"></div>
-      </section>
-    </aside>
+      <h3 class="sub-titulo">Tabela-verdade</h3>
+      <pre id="tabela-verdade" class="texto-puro" aria-label="Tabela-verdade">Tabela-verdade não carregada.</pre>
+      <h3 class="sub-titulo">Trace completo (fila, pilha, ordem)</h3>
+      <pre id="rastro-puro" class="texto-puro" aria-label="Trace em texto puro">Nenhum trace carregado.</pre>
+    </section>
   </div>
 
   <script src="/app.js"></script>
