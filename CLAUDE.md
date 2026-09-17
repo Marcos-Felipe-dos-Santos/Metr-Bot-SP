@@ -67,15 +67,18 @@ Tipografia: VT323 (títulos dos passos, botões, HUD e selo), IBM Plex Mono
 (terminal/dados), Special Elite (narração). SEMPRE com fallback monospace.
 Cores oficiais das linhas (#0054A6, #009640, #EF3A46) vivem dentro do
 mapa-carta (papel envelhecido); fora dele, só como contorno das etiquetas de
-linha no passo a passo. Texturas 100% CSS: scanlines (body::before),
-vinheta (body::after), ruído e vinheta interna do papel (.mapa::before/after).
+linha no passo a passo. Texturas 100% CSS, empilhadas: diagrama de rede
+desbotado no fundo (--diagrama, SVG data-URI, ~8% de opacidade, nas cores das
+linhas), ruído de filme (.app::after), scanlines (body::before) e vinheta
+(body::after); no papel do mapa, ruído e vinheta interna (.mapa::before/after).
 
 Layout (2 colunas; 1 coluna abaixo de 980px):
 - Esquerda: mapa grande (~60%) com tooltip (#dossie) na estação.
-- Direita: 4 passos numerados — 1 Origem (#busca), 2 Destino
-  (#busca-destino), 3 Opções (<details>, avançado: fechada, elevador,
-  lotada, acessibilidade, pico, linha paralisada, frase em linguagem
-  natural), 4 botão grande "Traçar rota" (#btn-despachar).
+- Direita, no topo: pedido em uma frase (#form-interpretar com #mensagem e
+  #btn-interpretar), destacado em âmbar; abaixo, 4 passos numerados —
+  1 Origem (#busca), 2 Destino (#busca-destino), 3 Opções (<details>,
+  avançado: fechada, elevador, lotada, acessibilidade, pico, linha
+  paralisada), 4 botão grande "Traçar rota" (#btn-despachar).
 - Resultado: "Resumo da rota" (#corrida + selo #selo) e o passo a passo
   (#passos) montado a partir de diagnostico.trechos/baldeacoes.
 - Narração: painel de conversa (#radio) com "Ouvir de novo"/"Parar" e a
