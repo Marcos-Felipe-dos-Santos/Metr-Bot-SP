@@ -41,6 +41,7 @@ def interpretar(mensagem):
 # ---------- frase válida ----------
 
 def test_frase_valida(com_chave, monkeypatch):
+    monkeypatch.setenv("GROQ_MODEL", "openai/gpt-oss-120b")
     recebido = llama_responde(monkeypatch, {
         "origem": "Shopping Metrô Tucuruvi", "destino": "se", "bloqueadas": ["Luz", " luz "],
     })
@@ -49,6 +50,7 @@ def test_frase_valida(com_chave, monkeypatch):
     assert r.json() == {
         "offline": False,
         "motivo": None,
+        "modelo": "openai/gpt-oss-120b",
         "origem": "Tucuruvi",
         "destino": "Sé",
         "bloqueadas": ["Luz"],

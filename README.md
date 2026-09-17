@@ -42,6 +42,16 @@ GROQ_API_KEY=sua_chave_groq
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
+> **Transparência sobre o modelo.** O código foi feito para o Llama
+> (`llama-3.3-70b-versatile` é o padrão). A conta Groq usada no
+> desenvolvimento **não tem nenhum modelo Llama de conversa disponível**; os
+> únicos Llama listados são os classificadores `llama-prompt-guard-2`. Por
+> isso a validação real foi feita com **`GROQ_MODEL=openai/gpt-oss-120b`**,
+> que também aceita o modo JSON do `/api/interpretar`. O modelo em uso
+> aparece na interface (painel Rádio e log da interpretação) e no campo
+> `modelo` das respostas. Com uma chave que tenha acesso ao Llama, basta
+> definir `GROQ_MODEL` no `.env`; nenhuma mudança de código é necessária.
+
 Sem chave, com chave inválida ou sem internet, a narração usa um **texto
 offline determinístico** montado só com os fatos do trace, e a interpretação
 fica desligada (a escolha é feita pelo mapa ou pela busca). A demo nunca
@@ -171,7 +181,7 @@ O front **nunca recalcula** busca nem lógica: ele só reproduz o JSON abaixo.
 | GET | `/api/locais` | Locais conhecidos (`pendente: true` até chegar a lista oficial) |
 | POST | `/api/rota` | `{origem, destino, bloqueadas[], algoritmo: bfs\|dfs\|ambos}` → saída do planejador. Retorna 404 para estação ou local desconhecido e 422 para algoritmo inválido |
 | POST | `/api/inferencia` | `{bloqueadas[], incluir_rede}` → inferência |
-| POST | `/api/interpretar` | `{mensagem}` → `{offline, motivo, origem, destino, bloqueadas[], extraido}` (ver abaixo) |
+| POST | `/api/interpretar` | `{mensagem}` → `{offline, motivo, modelo, origem, destino, bloqueadas[], extraido}` (ver abaixo) |
 | GET | `/api/narrar` | Narração por SSE (`?origem&destino&bloqueadas=A&bloqueadas=B&algoritmo`) |
 | GET | `/docs` | Documentação interativa (Swagger) |
 
@@ -189,7 +199,7 @@ O endpoint não calcula rota: o front aplica os nomes e o usuário despacha
 com `/api/rota`.
 
 **Eventos de `/api/narrar`, em ordem:** `fatos` → `inicio{fonte: llama|offline,
-motivo?, reiniciar?}` → `trecho{texto}` (vários) → `fim{fonte}`.
+modelo?, motivo?, reiniciar?}` → `trecho{texto}` (vários) → `fim{fonte}`.
 
 - **O Llama recebe somente o conteúdo do evento `fatos`.**
 - **Se o Llama cair no meio:** chega um segundo `inicio` com

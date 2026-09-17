@@ -131,6 +131,7 @@ def test_narrar_estacao_desconhecida():
 
 
 def test_narrar_com_llama(com_chave, monkeypatch):
+    monkeypatch.delenv("GROQ_MODEL", raising=False)
     recebidos = {}
 
     async def falso_llama(fatos, chave):
@@ -140,7 +141,7 @@ def test_narrar_com_llama(com_chave, monkeypatch):
 
     monkeypatch.setattr(main, "_trechos_llama", falso_llama)
     ev = narrar(origem="Luz", destino="Sé")
-    assert ev[1] == ("inicio", {"fonte": "llama"})
+    assert ev[1] == ("inicio", {"fonte": "llama", "modelo": "llama-3.3-70b-versatile"})
     assert [d["texto"] for t, d in ev if t == "trecho"] == ["Rota ", "narrada."]
     assert ev[-1] == ("fim", {"fonte": "llama"})
     assert recebidos["chave"] == "chave-de-teste"
