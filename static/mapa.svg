@@ -16,7 +16,7 @@
 <g class="estacao" data-linha="1" data-nome="Luz"><circle class="bolha" cx="380" cy="292"/><text x="392" y="296">Luz</text></g>
 <g class="estacao" data-linha="1" data-nome="São Bento"><circle class="bolha" cx="380" cy="321"/><text x="368" y="325" text-anchor="end">São Bento</text></g>
 <g class="estacao hub" data-linha="1" data-nome="Sé" data-hub="true"><circle class="anel" cx="380" cy="350" r="10"/><circle class="bolha" cx="380" cy="350"/><text x="392" y="354">Sé</text></g>
-<g class="estacao" data-linha="1" data-nome="Liberdade"><circle class="bolha" cx="380" cy="379"/><text x="368" y="383" text-anchor="end">Liberdade</text></g>
+<g class="estacao" data-linha="1" data-nome="Japão-Liberdade"><circle class="bolha" cx="380" cy="379"/><text x="368" y="383" text-anchor="end">Japão-Liberdade</text></g>
 <g class="estacao" data-linha="1" data-nome="São Joaquim"><circle class="bolha" cx="380" cy="408"/><text x="392" y="421">São Joaquim</text></g>
 <g class="estacao" data-linha="1" data-nome="Vergueiro"><circle class="bolha" cx="380" cy="437"/><text x="368" y="441" text-anchor="end">Vergueiro</text></g>
 <g class="estacao hub" data-linha="1" data-nome="Paraíso" data-hub="true"><circle class="anel" cx="380" cy="466" r="10"/><circle class="bolha" cx="380" cy="466"/><text x="392" y="470">Paraíso</text></g>
@@ -44,7 +44,7 @@
 <g class="estacao" data-linha="3" data-nome="Penha"><circle class="bolha" cx="730" cy="350"/><text x="726" y="410" text-anchor="end">Penha</text></g>
 <g class="estacao" data-linha="3" data-nome="Vila Matilde"><circle class="bolha" cx="780" cy="350"/><text x="776" y="374" text-anchor="end">Vila Matilde</text></g>
 <g class="estacao" data-linha="3" data-nome="Guilhermina-Esperança"><circle class="bolha" cx="830" cy="350"/><text x="834" y="392">Guilhermina-Esperança</text></g>
-<g class="estacao" data-linha="3" data-nome="Patriarca"><circle class="bolha" cx="880" cy="350"/><text x="876" y="410" text-anchor="end">Patriarca</text></g>
+<g class="estacao" data-linha="3" data-nome="Patriarca-Vila Ré"><circle class="bolha" cx="880" cy="350"/><text x="876" y="410" text-anchor="end">Patriarca-Vila Ré</text></g>
 <g class="estacao" data-linha="3" data-nome="Artur Alvim"><circle class="bolha" cx="930" cy="350"/><text x="926" y="374" text-anchor="end">Artur Alvim</text></g>
 <g class="estacao" data-linha="3" data-nome="Corinthians-Itaquera"><circle class="bolha" cx="980" cy="350"/><text x="984" y="392">Corinthians-Itaquera</text></g>
 </g>

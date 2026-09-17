@@ -17,7 +17,7 @@ LINHAS: dict[str, dict] = {
         "estacoes": [
             "Tucuruvi", "Parada Inglesa", "Jardim São Paulo", "Santana",
             "Carandiru", "Portuguesa-Tietê", "Armênia", "Tiradentes", "Luz",
-            "São Bento", "Sé", "Liberdade", "São Joaquim", "Vergueiro",
+            "São Bento", "Sé", "Japão-Liberdade", "São Joaquim", "Vergueiro",
             "Paraíso", "Ana Rosa", "Vila Mariana", "Santa Cruz",
             "Praça da Árvore", "Saúde", "São Judas", "Conceição", "Jabaquara",
         ],
@@ -39,7 +39,7 @@ LINHAS: dict[str, dict] = {
             "Palmeiras-Barra Funda", "Marechal Deodoro", "Santa Cecília",
             "República", "Anhangabaú", "Sé", "Pedro II", "Brás",
             "Bresser-Mooca", "Belém", "Tatuapé", "Carrão", "Penha",
-            "Vila Matilde", "Guilhermina-Esperança", "Patriarca",
+            "Vila Matilde", "Guilhermina-Esperança", "Patriarca-Vila Ré",
             "Artur Alvim", "Corinthians-Itaquera",
         ],
     },
@@ -47,9 +47,34 @@ LINHAS: dict[str, dict] = {
 
 CORES: dict[str, str] = {lid: dados["cor"] for lid, dados in LINHAS.items()}
 
-# Pendente: lista oficial do enunciado. Por ora só o local citado explicitamente.
+# Nomes das estações exatamente como em "Dados das linhas" do desafio.
+
+# Local -> estação mais próxima (proximo_de).
 LOCAIS_CONHECIDOS: dict[str, str] = {
+    # Linha 1 — dicionário LOCAIS da aula (desafio.pdf, Passo 2.4)
     "Shopping Metrô Tucuruvi": "Tucuruvi",
+    "Terminal Rodoviário Tietê": "Portuguesa-Tietê",
+    "Museu de Arte Sacra": "Tiradentes",
+    "Pinacoteca": "Luz",
+    "Museu da Língua Portuguesa": "Luz",
+    "Mosteiro de São Bento": "São Bento",
+    "Rua 25 de Março": "São Bento",
+    "Catedral da Sé": "Sé",
+    "Bairro da Liberdade": "Japão-Liberdade",
+    "Centro Cultural São Paulo": "Vergueiro",
+    "Shopping Metrô Santa Cruz": "Santa Cruz",
+    "Universidade São Judas": "São Judas",
+    "Terminal Rodoviário Jabaquara": "Jabaquara",
+    # Linha 2 — exemplos do desafio (R3) + propostas aprovadas pelo aluno
+    "MASP": "Trianon-Masp",
+    "Hospital das Clínicas": "Clínicas",
+    "Conjunto Nacional": "Consolação",
+    "Shopping Pátio Paulista": "Brigadeiro",
+    "Beco do Batman": "Vila Madalena",
+    # Linha 3 — exemplos do desafio (R3) + proposta aprovada pelo aluno
+    "Theatro Municipal": "Anhangabaú",
+    "Neo Química Arena": "Corinthians-Itaquera",
+    "Memorial da América Latina": "Palmeiras-Barra Funda",
 }
 
 
@@ -81,6 +106,24 @@ class EstacaoDesconhecida(ValueError):
     pass
 
 
+class LinhaDesconhecida(ValueError):
+    pass
+
+
+def nome_linha(lid: str) -> str:
+    """Nome usado nos fatos lógicos, como no desafio: 'Linha 1-Azul'."""
+    return f"Linha {LINHAS[lid]['nome']}"
+
+
+def resolver_linha(valor: str) -> str:
+    """Aceita '1', '1-Azul' ou 'Linha 1-Azul' e devolve o id ('1')."""
+    alvo = _normalizar(valor)
+    for lid, dados in LINHAS.items():
+        if alvo in {_normalizar(lid), _normalizar(dados["nome"]), _normalizar(nome_linha(lid))}:
+            return lid
+    raise LinhaDesconhecida(f"Linha desconhecida: {valor!r}")
+
+
 def vizinhos(estacao: str) -> list[str]:
     return list(ADJACENCIA[estacao])
 
@@ -95,27 +138,43 @@ def _normalizar(texto: str) -> str:
     return " ".join(texto.casefold().replace("-", " ").split())
 
 
-def _montar_indice() -> dict[str, str]:
-    indice: dict[str, str] = {}
-    for nome, estacao in [(e, e) for e in ESTACOES] + list(LOCAIS_CONHECIDOS.items()):
-        if estacao not in ADJACENCIA:
-            raise ValueError(f"Local {nome!r} aponta para estação inexistente {estacao!r}")
+def _montar_indice() -> dict[str, tuple[str, str]]:
+    """nome normalizado -> (tipo, nome canônico); tipo é 'estacao' ou 'local'."""
+    indice: dict[str, tuple[str, str]] = {}
+    entradas = [("estacao", e) for e in ESTACOES] + [("local", l) for l in LOCAIS_CONHECIDOS]
+    for tipo, nome in entradas:
+        if tipo == "local" and LOCAIS_CONHECIDOS[nome] not in ADJACENCIA:
+            raise ValueError(f"Local {nome!r} aponta para estação inexistente")
         chave = _normalizar(nome)
         if chave in indice:
-            raise ValueError(f"Nome {nome!r} colide com {indice[chave]!r} no índice")
-        indice[chave] = estacao
+            raise ValueError(f"Nome {nome!r} colide com {indice[chave][1]!r} no índice")
+        indice[chave] = (tipo, nome)
     return indice
 
 
 _INDICE = _montar_indice()
 
 
-def resolver(nome: str) -> str:
-    """Nome de estação ou local conhecido -> estação canônica."""
+def identificar(nome: str) -> tuple[str, str]:
+    """Nome digitado -> ('estacao'|'local', nome canônico). Sem aproximação."""
     try:
         return _INDICE[_normalizar(nome)]
     except KeyError:
         raise EstacaoDesconhecida(f"Estação ou local desconhecido: {nome!r}") from None
+
+
+def resolver(nome: str) -> str:
+    """Nome de estação ou local conhecido -> estação canônica."""
+    tipo, canonico = identificar(nome)
+    return canonico if tipo == "estacao" else LOCAIS_CONHECIDOS[canonico]
+
+
+def resolver_estacao(nome: str) -> str:
+    """Só aceita estação (cenários: fechada, manutenção, lotada)."""
+    tipo, canonico = identificar(nome)
+    if tipo != "estacao":
+        raise EstacaoDesconhecida(f"{nome!r} é um local, não uma estação")
+    return canonico
 
 
 def dossie(estacao: str) -> dict:

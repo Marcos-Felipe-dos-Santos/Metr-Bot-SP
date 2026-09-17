@@ -1,10 +1,16 @@
-"""Planejador: a lógica decide o que está fechado, a busca decide a rota."""
+"""Planejador: a lógica decide origem, destino e bloqueios; a busca decide a rota."""
 
 from __future__ import annotations
 
 from typing import Iterable
 
 from core import busca, grafo, logica
+
+TEMPO_POR_TRECHO = 2  # minutos por trecho (valor simulado, didático — desafio.pdf)
+
+
+class PedidoIncompleto(ValueError):
+    pass
 
 
 def trechos_da_rota(caminho_arestas: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -38,66 +44,112 @@ def diagnosticar(origem: str, destino: str, bloqueadas: list[str], trace: dict) 
     livre = busca.bfs(origem, destino)
     obstrucoes = [e for e in livre["caminho"] if e in set(bloqueadas)]
     trechos, baldeacoes = trechos_da_rota(trace["caminho_arestas"])
-    return {"obstrucoes": obstrucoes, "trechos": trechos, "baldeacoes": baldeacoes}
+    paradas = trace["metricas"]["paradas"]
+    return {
+        "obstrucoes": obstrucoes,
+        "trechos": trechos,
+        "baldeacoes": baldeacoes,
+        "tempo_min": None if paradas is None else paradas * TEMPO_POR_TRECHO,
+    }
 
 
 def validar_nomes(origem: str | None, destino: str | None,
-                  bloqueadas: Iterable[str] = ()) -> dict:
+                  fechadas: Iterable[str] = ()) -> dict:
     """Confere nomes extraídos de linguagem natural contra a rede.
 
-    Devolve as estações canônicas e a lista de nomes que não existem.
-    Nenhum nome é corrigido por aproximação: ou resolve, ou é inválido.
+    Origem/destino podem ser estação ou local (nome canônico preservado);
+    fechadas precisam ser estações. Nenhum nome é corrigido por aproximação.
     """
     invalidos: list[str] = []
 
-    def resolver(nome: str | None) -> str | None:
+    def ponto(nome: str | None) -> str | None:
         if nome is None:
             return None
         try:
-            return grafo.resolver(nome)
+            return grafo.identificar(nome)[1]
         except grafo.EstacaoDesconhecida:
             invalidos.append(nome)
             return None
 
-    org = resolver(origem)
-    dst = resolver(destino)
-    bloq = [b for b in (resolver(n) for n in bloqueadas) if b is not None]
+    def estacao(nome: str) -> str | None:
+        try:
+            return grafo.resolver_estacao(nome)
+        except grafo.EstacaoDesconhecida:
+            invalidos.append(nome)
+            return None
+
+    org = ponto(origem)
+    dst = ponto(destino)
+    fech = [e for e in (estacao(n) for n in fechadas) if e is not None]
     return {
         "origem": org,
         "destino": dst,
-        "bloqueadas": list(dict.fromkeys(bloq)),
+        "fechadas": list(dict.fromkeys(fech)),
         "invalidos": invalidos,
     }
 
 
-def planejar(origem: str, destino: str, bloqueadas: Iterable[str] = (),
-             algoritmo: str = "ambos") -> dict:
-    """origem/destino/bloqueadas aceitam nome de estação ou local conhecido."""
-    org = grafo.resolver(origem)
-    dst = grafo.resolver(destino)
-    bloq = list(dict.fromkeys(grafo.resolver(b) for b in bloqueadas))
+def montar_cenario(origem: str | None = None, destino: str | None = None, *,
+                   fechadas: Iterable[str] = (), manutencao: Iterable[str] = (),
+                   acessibilidade: bool = False, paralisadas: Iterable[str] = (),
+                   horario_pico: bool = False, lotadas: Iterable[str] = ()) -> logica.Cenario:
+    """Nomes digitados -> cenário canônico. Nome desconhecido = erro explícito."""
+    def estacoes(nomes):
+        return list(dict.fromkeys(grafo.resolver_estacao(n) for n in nomes))
 
-    inferencia = logica.inferir(bloq)
-    # A busca usa o que a base lógica concluiu como Bloqueada(x).
-    fechadas = [f.args[0] for f in inferencia.consulta("Bloqueada")]
+    return logica.Cenario(
+        origem=None if origem is None else grafo.identificar(origem),
+        destino=None if destino is None else grafo.identificar(destino),
+        acessibilidade=acessibilidade,
+        fechadas=estacoes(fechadas),
+        manutencao=estacoes(manutencao),
+        paralisadas=list(dict.fromkeys(grafo.resolver_linha(l) for l in paralisadas)),
+        horario_pico=horario_pico,
+        lotadas=estacoes(lotadas),
+    )
 
-    nomes = ["bfs", "dfs"] if algoritmo == "ambos" else [algoritmo]
-    buscas = {n.upper(): busca.buscar(n, org, dst, fechadas) for n in nomes}
 
+def planejar(origem: str, destino: str, *, fechadas: Iterable[str] = (),
+             manutencao: Iterable[str] = (), acessibilidade: bool = False,
+             paralisadas: Iterable[str] = (), horario_pico: bool = False,
+             lotadas: Iterable[str] = (), algoritmo: str = "ambos") -> dict:
+    """origem/destino: estação ou local conhecido (R1/R2 deduzem a estação)."""
+    nomes = ["bfs", "dfs"] if algoritmo == "ambos" else [algoritmo.lower()]
+    for nome in nomes:
+        if nome not in busca.ALGORITMOS:
+            raise ValueError(f"Algoritmo inválido: {algoritmo!r} (use bfs, dfs ou ambos)")
+
+    cenario = montar_cenario(origem, destino, fechadas=fechadas, manutencao=manutencao,
+                             acessibilidade=acessibilidade, paralisadas=paralisadas,
+                             horario_pico=horario_pico, lotadas=lotadas)
+    inferencia = logica.inferir(cenario)
+
+    # Tudo o que a busca usa vem da base lógica.
+    origens, destinos = inferencia.valores("origem"), inferencia.valores("destino")
+    if len(origens) != 1 or len(destinos) != 1:
+        raise PedidoIncompleto(f"A lógica não deduziu origem/destino únicos: {origens} / {destinos}")
+    org, dst = origens[0], destinos[0]
+    bloqueadas = inferencia.valores("bloqueada")
+
+    buscas = {n.upper(): busca.buscar(n, org, dst, bloqueadas) for n in nomes}
+    comparacao = {
+        nome: {"encontrado": t["encontrado"], "motivo": t["motivo"], "caminho": t["caminho"],
+               "tempo_min": None if t["metricas"]["paradas"] is None
+               else t["metricas"]["paradas"] * TEMPO_POR_TRECHO,
+               **t["metricas"]}
+        for nome, t in buscas.items()
+    }
+    principal = next(iter(buscas.values()))
     return {
         "origem": org,
         "destino": dst,
-        "bloqueadas": fechadas,
+        "cenario": cenario.para_json(),
+        "bloqueadas": bloqueadas,
+        "alertas": [{"papel": f.args[0], "estacao": f.args[1]} for f in inferencia.consulta("alerta")],
+        "alertas_lotacao": inferencia.valores("alerta_lotacao"),
+        "regras_disparadas": inferencia.regras_disparadas,
         "inferencia": inferencia.para_json(),
         "buscas": buscas,
-        "comparacao": {
-            nome: {
-                "encontrado": t["encontrado"],
-                "motivo": t["motivo"],
-                "caminho": t["caminho"],
-                **t["metricas"],
-            }
-            for nome, t in buscas.items()
-        },
-        "diagnostico": diagnosticar(org, dst, fechadas, next(iter(buscas.values()))),
+        "comparacao": comparacao,
+        "diagnostico": diagnosticar(org, dst, bloqueadas, principal),
     }
