@@ -36,6 +36,21 @@
       </section>
 
       <aside class="painel">
+        <section class="cartao frase-topo" aria-label="Pedido em uma frase">
+          <form id="form-interpretar" class="interpretar">
+            <label class="frase-rotulo" for="mensagem">Peça em uma frase</label>
+            <div class="frase-linha">
+              <input id="mensagem" type="text" maxlength="500" autocomplete="off"
+                     placeholder="estou na Catedral da Sé e quero ir à Pinacoteca"
+                     title="A IA só entende a frase; quem calcula a rota é o algoritmo">
+              <button id="btn-interpretar" class="btn btn-mini" type="submit"
+                      title="A IA só entende a frase; quem calcula a rota é o algoritmo">Entender frase</button>
+            </div>
+            <p id="interpretar-status" class="interpretar-status"></p>
+          </form>
+          <p class="ajuda frase-ajuda">Ou preencha os passos abaixo.</p>
+        </section>
+
         <section class="cartao passo" aria-label="Passo 1: origem">
           <h2 class="passo-titulo"><span class="passo-num">1</span> Origem
             <small>onde você está</small></h2>
@@ -107,14 +122,6 @@
               <label class="opcao l3"><input class="paralisar" type="checkbox" value="3"> Linha 3-Vermelha</label>
             </div>
 
-            <form id="form-interpretar" class="interpretar">
-              <label class="ajuda" for="mensagem">Ou peça em uma frase:</label>
-              <input id="mensagem" type="text" maxlength="500" autocomplete="off"
-                     placeholder="estou na Catedral da Sé e quero ir à Pinacoteca">
-              <button id="btn-interpretar" class="btn btn-mini" type="submit"
-                      title="A IA só entende a frase; quem calcula a rota é o algoritmo">Entender frase</button>
-              <p id="interpretar-status" class="interpretar-status"></p>
-            </form>
           </div>
         </details>
 

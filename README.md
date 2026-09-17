@@ -78,9 +78,17 @@ obrigatórios estão em `core/tests/test_planejador_e_casos.py`.
 
 ## Como usar
 
-A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
+No alto do painel fica o **pedido em uma frase**; abaixo dele, os **4 passos
+numerados**: origem, destino, opções e "Traçar rota".
 
-1. **Passo 1 e 2 — origem e destino.** Digite o nome de uma estação ou de um
+1. **Peça em uma frase** (atalho, no topo): *"estou na Catedral da Sé e quero
+   ir à Pinacoteca, uso cadeira de rodas"* e clique em **Entender frase**. O
+   LLM (ou o modo offline) só extrai origem, destino, estações fechadas e
+   acessibilidade; o backend confere cada nome e **recusa nomes
+   inexistentes**, como "Avenida Paulista". Sem origem e destino válidos, o
+   pedido é rejeitado inteiro, como no PDF. O que a frase preencher aparece
+   nos passos abaixo, para você conferir antes de traçar.
+2. **Passo 1 e 2 — origem e destino.** Digite o nome de uma estação ou de um
    lugar conhecido ("Pinacoteca") ou clique em **Escolher no mapa** e depois
    na estação. Os dois caminhos acendem os mesmos halos:
    - origem com halo verde fosforescente;
@@ -88,30 +96,25 @@ A tela tem **4 passos numerados**: origem, destino, opções e "Traçar rota".
    - estação fechada com cruz vermelha;
    - elevador parado com anel âmbar tracejado;
    - estação lotada com anel amarelo.
-2. **Passo 3 — Opções (avançado).** Só se precisar:
+3. **Passo 3 — Opções (avançado).** Só se precisar:
    - marcar no mapa estação fechada, elevador parado ou estação lotada;
    - "preciso de acessibilidade" e "estou em horário de pico";
-   - linha paralisada (1-Azul, 2-Verde ou 3-Vermelha);
-   - **pedir em uma frase**: *"estou na Catedral da Sé e quero ir à
-     Pinacoteca, uso cadeira de rodas"*. O LLM (ou o modo offline) só extrai
-     origem, destino, estações fechadas e acessibilidade; o backend confere
-     cada nome e **recusa nomes inexistentes**, como "Avenida Paulista".
-     Sem origem e destino válidos, o pedido é rejeitado inteiro, como no PDF.
-3. **Passo 4 — Traçar rota.** O mapa reproduz o trace:
+   - linha paralisada (1-Azul, 2-Verde ou 3-Vermelha).
+4. **Passo 4 — Traçar rota.** O mapa reproduz o trace:
    - BFS em ondas por nível;
    - DFS com explorador âmbar e backtracking;
    - rota final desenhada traço a traço (fio de Ariadne);
    - o resultado recebe o selo **AUTORIZADO PELA CENTRAL** ou
      **TÚNEL OBSTRUÍDO**.
-4. **Leia o resultado:**
+5. **Leia o resultado:**
    - **Resumo da rota:** paradas, baldeações e onde trocar, tempo estimado
      (2 min por trecho), alertas, lotação, estações bloqueadas pela lógica,
      regras disparadas e a corrida BFS × DFS;
    - **Passo a passo:** cada trecho com a linha e as baldeações;
    - **Narração:** o texto da IA (ou do servidor, quando ela não responde),
      com "Ouvir de novo" e "Parar".
-5. **Mostrar detalhes da busca** (botão no topo) derruba scanlines, vinheta e
-   ruído e revela, em texto puro, as
+6. **Mostrar detalhes da busca** (botão no topo) derruba o fundo de rede,
+   scanlines, vinheta e ruído e revela, em texto puro, as
    **regras aplicadas** com fórmula e justificativa, o **registro passo a
    passo** da busca, a **tabela-verdade** e o **trace completo**: fila/pilha
    de cada passo, ordem, visitados, mapa de pais, métricas e todas as

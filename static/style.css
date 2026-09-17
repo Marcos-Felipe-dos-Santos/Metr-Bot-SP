@@ -45,6 +45,8 @@
   --scanlines: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
   --vinheta:   radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
   --ruido: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  /* Diagrama de rede desbotado ao fundo (SVG embutido, sem arquivo extra) */
+  --diagrama: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900'%3E%3Cg fill='none' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' opacity='0.085'%3E%3Cpath stroke='%230054A6' d='M120 -20 V250 L260 390 V690 L180 770 V920'/%3E%3Cpath stroke='%23009640' d='M-20 520 C120 470 220 470 330 430 C460 383 520 330 640 300 H900 L1020 180 H1220'/%3E%3Cpath stroke='%23EF3A46' d='M-20 160 H300 L430 290 H760 L880 410 H1220'/%3E%3Cpath stroke='%230054A6' d='M760 920 V700 L900 560 H1220'/%3E%3Cpath stroke='%23009640' d='M320 920 L520 720 H700'/%3E%3C/g%3E%3Cg fill='%23D8CFBC' opacity='0.05'%3E%3Ccircle cx='120' cy='120' r='8'/%3E%3Ccircle cx='260' cy='390' r='8'/%3E%3Ccircle cx='430' cy='290' r='8'/%3E%3Ccircle cx='640' cy='300' r='8'/%3E%3Ccircle cx='760' cy='410' r='8'/%3E%3Ccircle cx='900' cy='560' r='8'/%3E%3Ccircle cx='1020' cy='180' r='8'/%3E%3Ccircle cx='520' cy='720' r='8'/%3E%3Ccircle cx='180' cy='770' r='8'/%3E%3C/g%3E%3C/svg%3E");
 
   /* Glows */
   --glow-fosfo:  0 0 6px rgba(124,255,63,.55),  0 0 18px rgba(124,255,63,.22);
@@ -63,7 +65,14 @@ html, body { margin: 0; padding: 0; }
 
 body {
   min-height: 100vh;
-  background: var(--carvao);
+  /* Camadas: diagrama desbotado sobre o carvão; scanlines, vinheta e ruído
+     entram por cima, nos pseudo-elementos. */
+  background-color: #080706;
+  background-image: var(--diagrama);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
   color: var(--osso);
   font-family: var(--font-term);
   font-size: 13px;
@@ -85,6 +94,13 @@ body::before { /* scanlines */
 body::after { /* vinheta */
   content: ""; position: fixed; inset: 0; z-index: 61;
   background: var(--vinheta);
+  pointer-events: none;
+}
+.app::after { /* ruído do filme, entre o diagrama e as scanlines */
+  content: ""; position: fixed; inset: 0; z-index: 59;
+  background: var(--ruido);
+  opacity: .05;
+  mix-blend-mode: overlay;
   pointer-events: none;
 }
 
@@ -428,8 +444,30 @@ body::after { /* vinheta */
 .sel-manutencao { color: var(--ambar); }
 .sel-lotadas { color: var(--radio); }
 
-.interpretar { margin-top: 12px; border-top: 1px solid rgba(138,107,74,.5); padding-top: 8px; }
-.interpretar input { margin-bottom: 6px; }
+/* Pedido em linguagem natural: primeiro cartão do painel, com brilho discreto. */
+.frase-topo {
+  border-color: var(--ambar-dim);
+  box-shadow: inset 0 0 18px rgba(255,176,0,.06);
+}
+.frase-rotulo {
+  display: block;
+  font-family: var(--font-hud);
+  font-size: 19px;
+  letter-spacing: 1px;
+  color: var(--radio);
+}
+.frase-linha { display: flex; gap: 6px; align-items: stretch; margin-top: 8px; }
+.frase-linha input { flex: 1 1 auto; min-width: 0; }
+.frase-linha .btn { flex: none; white-space: nowrap; }
+.frase-topo .interpretar input:focus { border-color: var(--radio); box-shadow: var(--glow-ambar); }
+.frase-ajuda { margin: 8px 0 0; }
+
+@media (max-width: 420px) {
+  .frase-linha { flex-wrap: wrap; }
+  .frase-linha .btn { width: 100%; }
+}
+
+.interpretar input { margin-bottom: 0; }
 .interpretar-status { margin: 6px 0 0; font-size: 12px; min-height: 1em; color: var(--fantasma); }
 .interpretar-status.trace { color: var(--fosfo); }
 .interpretar-status.erro { color: var(--alerta); }
@@ -598,7 +636,9 @@ body.modo-auditoria .avancado { display: block; }
 
 /* Modo avançado = prova da matéria: derruba texturas e mostra texto puro. */
 body.modo-auditoria::before,
-body.modo-auditoria::after { display: none; }
+body.modo-auditoria::after,
+body.modo-auditoria .app::after { display: none; }
+body.modo-auditoria { background-image: none; }
 body.modo-auditoria .mapa::before,
 body.modo-auditoria .mapa::after { display: none; }
 body.modo-auditoria .mapa { box-shadow: none; background: var(--papel); }
