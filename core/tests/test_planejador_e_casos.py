@@ -20,6 +20,45 @@ def test_planejar_bloqueio_vem_da_base_logica():
     assert p["comparacao"]["BFS"]["encontrado"] is False
 
 
+def test_diagnostico_baldeacoes():
+    d = planejar("Vila Madalena", "Corinthians-Itaquera", algoritmo="bfs")["diagnostico"]
+    assert d["obstrucoes"] == []
+    assert d["trechos"] == [
+        {"linha": "2", "de": "Vila Madalena", "ate": "Paraíso", "paradas": 6},
+        {"linha": "1", "de": "Paraíso", "ate": "Sé", "paradas": 4},
+        {"linha": "3", "de": "Sé", "ate": "Corinthians-Itaquera", "paradas": 12},
+    ]
+    assert d["baldeacoes"] == [
+        {"estacao": "Paraíso", "de_linha": "2", "para_linha": "1"},
+        {"estacao": "Sé", "de_linha": "1", "para_linha": "3"},
+    ]
+
+
+def test_diagnostico_aresta_de_duas_linhas():
+    # Brigadeiro→Paraíso→Ana Rosa→Vila Mariana: segue na L2 até Ana Rosa.
+    d = planejar("Brigadeiro", "Vila Mariana")["diagnostico"]
+    assert [t["linha"] for t in d["trechos"]] == ["2", "1"]
+    assert d["baldeacoes"] == [{"estacao": "Ana Rosa", "de_linha": "2", "para_linha": "1"}]
+    assert planejar("Paraíso", "Ana Rosa")["diagnostico"]["trechos"] == [
+        {"linha": "1", "de": "Paraíso", "ate": "Ana Rosa", "paradas": 1}
+    ]
+
+
+def test_diagnostico_tunel_obstruido():
+    p = planejar("Luz", "República", bloqueadas=["Sé", "Jabaquara"])
+    d = p["diagnostico"]
+    assert d["obstrucoes"] == ["Sé"]
+    assert d["trechos"] == [] and d["baldeacoes"] == []
+    assert not p["comparacao"]["DFS"]["encontrado"]
+
+
+def test_bfs_e_dfs_mesma_rota_esforco_diferente():
+    # Rede sem ciclos: caminho único; muda só o esforço.
+    c = planejar("Vila Madalena", "Corinthians-Itaquera")["comparacao"]
+    assert c["BFS"]["caminho"] == c["DFS"]["caminho"]
+    assert c["BFS"]["nos_visitados"] != c["DFS"]["nos_visitados"]
+
+
 def test_planejar_erros():
     with pytest.raises(grafo.EstacaoDesconhecida):
         planejar("Luz", "Atlântida")

@@ -7,6 +7,40 @@ from typing import Iterable
 from core import busca, grafo, logica
 
 
+def trechos_da_rota(caminho_arestas: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Agrupa as arestas por linha; troca de linha = baldeação.
+
+    Uma aresta pode pertencer a duas linhas (Paraíso–Ana Rosa): a linha do
+    trecho é mantida enquanto for possível e só muda quando obrigatório.
+    """
+    grupos: list[dict] = []
+    for aresta in caminho_arestas:
+        linhas = set(aresta["linhas"])
+        if grupos and grupos[-1]["linhas"] & linhas:
+            grupos[-1]["linhas"] &= linhas
+            grupos[-1]["ate"] = aresta["para"]
+            grupos[-1]["paradas"] += 1
+        else:
+            grupos.append({"linhas": linhas, "de": aresta["de"],
+                           "ate": aresta["para"], "paradas": 1})
+    trechos = [
+        {"linha": min(g["linhas"]), "de": g["de"], "ate": g["ate"], "paradas": g["paradas"]}
+        for g in grupos
+    ]
+    baldeacoes = [
+        {"estacao": b["de"], "de_linha": a["linha"], "para_linha": b["linha"]}
+        for a, b in zip(trechos, trechos[1:])
+    ]
+    return trechos, baldeacoes
+
+
+def diagnosticar(origem: str, destino: str, bloqueadas: list[str], trace: dict) -> dict:
+    livre = busca.bfs(origem, destino)
+    obstrucoes = [e for e in livre["caminho"] if e in set(bloqueadas)]
+    trechos, baldeacoes = trechos_da_rota(trace["caminho_arestas"])
+    return {"obstrucoes": obstrucoes, "trechos": trechos, "baldeacoes": baldeacoes}
+
+
 def planejar(origem: str, destino: str, bloqueadas: Iterable[str] = (),
              algoritmo: str = "ambos") -> dict:
     """origem/destino/bloqueadas aceitam nome de estação ou local conhecido."""
@@ -36,4 +70,5 @@ def planejar(origem: str, destino: str, bloqueadas: Iterable[str] = (),
             }
             for nome, t in buscas.items()
         },
+        "diagnostico": diagnosticar(org, dst, fechadas, next(iter(buscas.values()))),
     }
