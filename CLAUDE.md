@@ -100,6 +100,15 @@ Fase 4: README.md + validação ponta a ponta + instruções de execução
 - 52 estações (3 hubs contados uma vez). Locais conhecidos: por ora só
   "Shopping Metrô Tucuruvi" → Tucuruvi (aguardando texto oficial).
 
+## Propriedade da rede (relatório e apresentação)
+- As 3 linhas não formam ciclo: existe caminho ÚNICO entre duas estações.
+  BFS e DFS chegam à mesma rota; a diferença é só o esforço (nós visitados,
+  backtracks). É isso que a "corrida BFS × DFS" deve evidenciar.
+- Bloquear uma estação desse caminho único torna o destino inalcançável
+  ("túnel obstruído"): coberto por teste e pela narração.
+- Os 11 testes pulados ("aguardando texto oficial") permanecem até o grupo
+  fornecer R1–R5, R1–R7 e os 6 casos.
+
 ## Formato do trace (v1 — core/busca.py e core/logica.py)
 Comum (BFS e DFS): algoritmo, estrutura, origem, destino, bloqueadas,
 passos[], ordem[], visitados[], pai{no: pai|null}, encontrado, motivo,
@@ -119,7 +128,30 @@ caminho[], caminho_arestas[{de, para, linhas[]}], metricas{}.
   inferencias[{n, iteracao, regra, fato, justificativa[]}], fatos_derivados[],
   bloqueadas[], total_fatos. Fato = {predicado, args[], texto}.
 - Planejador: {origem, destino, bloqueadas, inferencia, buscas{BFS, DFS},
-  comparacao{ALG: {encontrado, motivo, caminho, ...metricas}}}.
+  comparacao{ALG: {encontrado, motivo, caminho, ...metricas}},
+  diagnostico{obstrucoes[], trechos[{linha, de, ate, paradas}],
+  baldeacoes[{estacao, de_linha, para_linha}]}}.
+  obstrucoes = bloqueadas que estão no caminho único sem bloqueio.
+
+## Contrato da API (Fase 2 — main.py)
+- GET  /api/estacoes → {linhas[{id, nome, cor, estacoes[]}], hubs[], estacoes[dossiê]}
+- GET  /api/locais → {pendente, aviso, locais[{nome, estacao}]}
+- POST /api/rota {origem, destino, bloqueadas[], algoritmo: bfs|dfs|ambos}
+  → saída do planejador. 404 = estação/local desconhecido; 422 = algoritmo inválido.
+- POST /api/inferencia {bloqueadas[], incluir_rede} → inferência (JSON acima).
+- GET  /api/narrar?origem&destino&bloqueadas=A&bloqueadas=B&algoritmo (SSE,
+  compatível com EventSource). Eventos em ordem: fatos → inicio{fonte:
+  llama|offline, motivo?, reiniciar?} → trecho{texto}* → fim{fonte}.
+  Se o Llama cair no meio, vem um segundo "inicio" com fonte offline e
+  reiniciar=true: o front descarta o texto parcial.
+- Llama recebe SOMENTE o evento "fatos". Env: GROQ_API_KEY, GROQ_MODEL
+  (padrão llama-3.3-70b-versatile). Só erros GroqError caem no offline.
+- Regra do front: /api/rota e /api/narrar recebem OS MESMOS parâmetros
+  (origem, destino, bloqueadas, algoritmo); o evento "fatos" ecoa origem,
+  destino, bloqueadas e esforco{ALG} para o front conferir.
+- Front: stream encerrado sem "fim" = erro de narração (não esperar para sempre).
+- "/" serve static/ (index.html pendente da Fase 3).
+- Rodar: .venv\Scripts\python -m uvicorn main:app --reload
 
 ## Pendências (NÃO inventar)
 - Texto literal de R1–R5, requisitos R1–R7 e os 6 casos oficiais: aguardando
