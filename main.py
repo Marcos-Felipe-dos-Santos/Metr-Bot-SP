@@ -27,6 +27,13 @@ load_dotenv()
 
 RAIZ = Path(__file__).parent
 MODELO_PADRAO = "llama-3.3-70b-versatile"
+# Limites folgados: modelos com raciocínio (ex.: openai/gpt-oss-120b) gastam
+# tokens antes da resposta; uma resposta cortada vira JSON inválido (502).
+
+
+def modelo_ativo() -> str:
+    """Modelo em uso (GROQ_MODEL); exposto nas respostas por transparência."""
+    return os.environ.get("GROQ_MODEL", MODELO_PADRAO)
 
 app = FastAPI(title="MetrôBot SP — Subsolo SP", version="1.0.0")
 app.add_middleware(
@@ -143,13 +150,13 @@ def validar_json_llama(texto: str) -> dict:
 async def _extrair_llama(mensagem: str, chave: str) -> str:
     cliente = AsyncGroq(api_key=chave, timeout=15.0, max_retries=0)
     resposta = await cliente.chat.completions.create(
-        model=os.environ.get("GROQ_MODEL", MODELO_PADRAO),
+        model=modelo_ativo(),
         messages=[
             {"role": "system", "content": prompt_interpretacao()},
             {"role": "user", "content": mensagem},
         ],
         temperature=0,
-        max_completion_tokens=200,
+        max_completion_tokens=600,
         response_format={"type": "json_object"},
     )
     return resposta.choices[0].message.content
@@ -180,6 +187,7 @@ async def interpretar(pedido: PedidoInterpretacao) -> dict:
     return {
         "offline": False,
         "motivo": None,
+        "modelo": modelo_ativo(),
         "origem": validado["origem"],
         "destino": validado["destino"],
         "bloqueadas": validado["bloqueadas"],
@@ -271,13 +279,13 @@ async def _trechos_offline(texto: str) -> AsyncIterator[str]:
 async def _trechos_llama(fatos: dict, chave: str) -> AsyncIterator[str]:
     cliente = AsyncGroq(api_key=chave, timeout=15.0, max_retries=0)
     fluxo = await cliente.chat.completions.create(
-        model=os.environ.get("GROQ_MODEL", MODELO_PADRAO),
+        model=modelo_ativo(),
         messages=[
             {"role": "system", "content": PROMPT_SISTEMA},
             {"role": "user", "content": json.dumps(fatos, ensure_ascii=False)},
         ],
         temperature=0.3,
-        max_completion_tokens=300,
+        max_completion_tokens=800,
         stream=True,
     )
     async for pedaco in fluxo:
@@ -295,7 +303,7 @@ async def _narrar(fatos: dict) -> AsyncIterator[str]:
         try:
             async for texto in _trechos_llama(fatos, chave):
                 if not enviou:
-                    yield _sse("inicio", {"fonte": "llama"})
+                    yield _sse("inicio", {"fonte": "llama", "modelo": modelo_ativo()})
                     enviou = True
                 yield _sse("trecho", {"texto": texto})
             if enviou:
