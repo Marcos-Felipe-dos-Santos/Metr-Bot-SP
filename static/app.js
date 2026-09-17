@@ -84,7 +84,7 @@ async function api(caminho, corpo) {
 // ------------------------------------------------------------ mapa
 
 async function carregarMapa() {
-  const resp = await fetch("/mapa.svg");
+  const resp = await fetch("/mapa.svg", { cache: "no-cache" });
   if (!resp.ok) throw new Error(`mapa.svg indisponível (${resp.status})`);
   $("#mapa-svg-host").innerHTML = await resp.text();
   const svg = $("#mapa-svg-host svg");
@@ -330,6 +330,65 @@ function ligarBusca() {
     else if (ev.key === "Escape") fechar();
   });
   input.addEventListener("blur", fechar);
+}
+
+// Linguagem natural: o Llama só extrai nomes, o backend valida, nós só aplicamos.
+function ligarInterpretacao() {
+  const form = $("#form-interpretar");
+  const status = $("#interpretar-status");
+  const botao = $("#btn-interpretar");
+  const avisar = (texto, tipo) => {
+    status.textContent = texto;
+    status.className = `linha-log interpretar-status ${tipo}`;
+  };
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const mensagem = $("#mensagem").value.trim();
+    if (!mensagem) return;
+    botao.disabled = true;
+    avisar("Central ouvindo…", "");
+    try {
+      const resp = await fetch("/api/interpretar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensagem }),
+      });
+      const dados = await resp.json().catch(() => ({}));
+      if (resp.status === 422 && dados.detail?.invalidos) {
+        avisar(`Fora da rede: ${dados.detail.invalidos.join(", ")}. Nada foi alterado.`, "erro");
+        log(`interpretar: nomes fora da rede ${listar(dados.detail.invalidos)}`, "erro");
+        return;
+      }
+      if (!resp.ok) {
+        const detalhe = typeof dados.detail === "string" ? dados.detail : `HTTP ${resp.status}`;
+        avisar(`Central não entendeu: ${detalhe}`, "erro");
+        log(`interpretar: ${detalhe}`, "erro");
+        return;
+      }
+      if (dados.offline) {
+        avisar(`Intérprete offline (${dados.motivo}). Escolha pelo mapa ou pela busca.`, "erro");
+        $("#busca").focus();
+        return;
+      }
+      if (dados.origem) estado.origem = dados.origem;
+      if (dados.destino) estado.destino = dados.destino;
+      estado.bloqueadas = [...dados.bloqueadas];
+      definirModo(estado.destino ? "bloquear" : "destino");
+      atualizarSelecao();
+      const partes = [
+        dados.origem && `origem ${dados.origem}`,
+        dados.destino && `destino ${dados.destino}`,
+        `bloqueadas ${listar(dados.bloqueadas)}`,
+      ].filter(Boolean);
+      avisar(`Entendido: ${partes.join(" · ")}. Confira e DESPACHE.`, "trace");
+      log(`interpretar (Llama): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
+    } catch (erro) {
+      avisar(`Sem contato com a Central: ${erro.message}`, "erro");
+    } finally {
+      botao.disabled = false;
+    }
+  });
 }
 
 // ------------------------------------------------------------ reprodução dos traces
@@ -707,6 +766,7 @@ async function iniciar() {
     conferirMapa();
     ligarMapa(svg);
     ligarBusca();
+    ligarInterpretacao();
     atualizarSelecao();
     $("#status-api").textContent = "CENTRAL ONLINE";
     $("#status-api").classList.add("ok");

@@ -21,7 +21,7 @@ from groq import AsyncGroq, GroqError
 from pydantic import BaseModel, Field
 
 from core import grafo, logica
-from core.planejador import planejar
+from core.planejador import planejar, validar_nomes
 
 load_dotenv()
 
@@ -93,6 +93,98 @@ def inferencia(pedido: PedidoInferencia) -> dict:
     except grafo.EstacaoDesconhecida as erro:
         raise HTTPException(status_code=404, detail=str(erro)) from erro
     return logica.inferir(bloq).para_json(incluir_rede=pedido.incluir_rede)
+
+
+# ---------------------------------------------------------------- interpretação
+
+class PedidoInterpretacao(BaseModel):
+    mensagem: str = Field(min_length=1, max_length=500)
+
+
+class LlamaRespostaInvalida(ValueError):
+    pass
+
+
+def prompt_interpretacao() -> str:
+    nomes = grafo.ESTACOES + list(grafo.LOCAIS_CONHECIDOS)
+    return (
+        "Você extrai nomes de um pedido de viagem no metrô de São Paulo. "
+        "Responda SOMENTE com um objeto JSON com exatamente estas chaves: "
+        '{"origem": string ou null, "destino": string ou null, "bloqueadas": [string]}. '
+        "'bloqueadas' são estações que o usuário quer evitar ou que estão fechadas. "
+        "Se o usuário citar um nome desta lista, copie o nome exatamente como está na lista: "
+        f"{json.dumps(nomes, ensure_ascii=False)}. "
+        "Se citar um nome que NÃO está na lista, copie o nome como o usuário escreveu, sem "
+        "trocar por outro parecido. Não calcule rota, não sugira estações, não adicione "
+        "nomes que o usuário não disse. Use null para o que não foi dito."
+    )
+
+
+def validar_json_llama(texto: str) -> dict:
+    """Aceita só o formato combinado; qualquer desvio é erro explícito."""
+    try:
+        dados = json.loads(texto)
+    except (json.JSONDecodeError, TypeError) as erro:
+        raise LlamaRespostaInvalida("resposta do Llama não é JSON") from erro
+    if not isinstance(dados, dict) or set(dados) != {"origem", "destino", "bloqueadas"}:
+        raise LlamaRespostaInvalida("JSON do Llama fora do formato {origem, destino, bloqueadas}")
+    for chave in ("origem", "destino"):
+        if dados[chave] is not None and not isinstance(dados[chave], str):
+            raise LlamaRespostaInvalida(f"'{chave}' deve ser texto ou null")
+    if not isinstance(dados["bloqueadas"], list) or not all(isinstance(b, str) for b in dados["bloqueadas"]):
+        raise LlamaRespostaInvalida("'bloqueadas' deve ser uma lista de textos")
+    return {
+        "origem": (dados["origem"] or "").strip() or None,
+        "destino": (dados["destino"] or "").strip() or None,
+        "bloqueadas": [b.strip() for b in dados["bloqueadas"] if b.strip()],
+    }
+
+
+async def _extrair_llama(mensagem: str, chave: str) -> str:
+    cliente = AsyncGroq(api_key=chave, timeout=15.0, max_retries=0)
+    resposta = await cliente.chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", MODELO_PADRAO),
+        messages=[
+            {"role": "system", "content": prompt_interpretacao()},
+            {"role": "user", "content": mensagem},
+        ],
+        temperature=0,
+        max_completion_tokens=200,
+        response_format={"type": "json_object"},
+    )
+    return resposta.choices[0].message.content
+
+
+@app.post("/api/interpretar")
+async def interpretar(pedido: PedidoInterpretacao) -> dict:
+    """Llama só extrai nomes; o core/ valida. Rota continua com /api/rota."""
+    vazio = {"origem": None, "destino": None, "bloqueadas": []}
+    chave = os.environ.get("GROQ_API_KEY", "").strip()
+    if not chave:
+        return {"offline": True, "motivo": "GROQ_API_KEY não configurada", **vazio, "extraido": None}
+    try:
+        extraido = validar_json_llama(await _extrair_llama(pedido.mensagem, chave))
+    except GroqError as erro:
+        return {"offline": True, "motivo": f"Llama indisponível ({type(erro).__name__})",
+                **vazio, "extraido": None}
+    except LlamaRespostaInvalida as erro:
+        raise HTTPException(status_code=502, detail=str(erro)) from erro
+
+    validado = validar_nomes(extraido["origem"], extraido["destino"], extraido["bloqueadas"])
+    if validado["invalidos"]:
+        raise HTTPException(status_code=422, detail={
+            "erro": "nomes fora da rede",
+            "invalidos": validado["invalidos"],
+            "extraido": extraido,
+        })
+    return {
+        "offline": False,
+        "motivo": None,
+        "origem": validado["origem"],
+        "destino": validado["destino"],
+        "bloqueadas": validado["bloqueadas"],
+        "extraido": extraido,
+    }
 
 
 # ---------------------------------------------------------------- narração

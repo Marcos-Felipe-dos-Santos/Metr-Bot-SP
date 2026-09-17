@@ -1,7 +1,7 @@
 import pytest
 
 from core import grafo
-from core.planejador import planejar
+from core.planejador import planejar, validar_nomes
 
 
 def test_planejar_resolve_locais_e_roda_as_duas_buscas():
@@ -57,6 +57,22 @@ def test_bfs_e_dfs_mesma_rota_esforco_diferente():
     c = planejar("Vila Madalena", "Corinthians-Itaquera")["comparacao"]
     assert c["BFS"]["caminho"] == c["DFS"]["caminho"]
     assert c["BFS"]["nos_visitados"] != c["DFS"]["nos_visitados"]
+
+
+def test_validar_nomes_resolve_e_aponta_invalidos():
+    v = validar_nomes("shopping metrô tucuruvi", "se", ["LUZ", "Atlântida", "luz"])
+    assert v == {
+        "origem": "Tucuruvi",
+        "destino": "Sé",
+        "bloqueadas": ["Luz"],
+        "invalidos": ["Atlântida"],
+    }
+
+
+def test_validar_nomes_nao_aproxima():
+    v = validar_nomes("Shopping Tucuruvi", None)
+    assert v["origem"] is None and v["destino"] is None
+    assert v["invalidos"] == ["Shopping Tucuruvi"]
 
 
 def test_planejar_erros():
