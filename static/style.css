@@ -351,7 +351,9 @@ body.modo-lanterna::after {
 
 .modos, .acoes, .controles { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .modo[data-modo="destino"][aria-pressed="true"] { background: var(--ambar); border-color: var(--ambar); box-shadow: var(--glow-ambar); }
-.modo[data-modo="bloquear"][aria-pressed="true"] { background: var(--alerta); border-color: var(--alerta); color: var(--osso); box-shadow: var(--glow-alerta); }
+.modo[data-modo="fechar"][aria-pressed="true"] { background: var(--alerta); border-color: var(--alerta); color: var(--osso); box-shadow: var(--glow-alerta); }
+.modo[data-modo="manutencao"][aria-pressed="true"] { background: var(--ambar-dim); border-color: var(--ambar); color: var(--osso); box-shadow: var(--glow-ambar); }
+.modo[data-modo="lotada"][aria-pressed="true"] { background: var(--radio); border-color: var(--radio); box-shadow: none; }
 .controles label { display: flex; flex-direction: column; font-size: 11px; color: var(--fantasma); flex: 1; }
 .controles select {
   background: var(--tunel-2); color: var(--osso); border: 1px solid var(--ferrugem);
@@ -369,7 +371,27 @@ body.modo-lanterna::after {
 .selecao dd { margin: 0; overflow-wrap: anywhere; }
 .sel-origem { color: var(--fosfo); }
 .sel-destino { color: var(--ambar); }
-.sel-bloqueadas { color: var(--alerta); }
+.sel-fechadas { color: var(--alerta); }
+.sel-manutencao { color: var(--ambar); }
+.sel-lotadas { color: var(--radio); }
+
+.cenario {
+  border: 1px solid rgba(138,107,74,.5); margin: 8px 0; padding: 6px 10px;
+  display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px;
+}
+.cenario legend { color: var(--fantasma); padding: 0 4px; }
+.cenario label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.cenario input { accent-color: var(--fosfo); }
+.cenario-rotulo { flex-basis: 100%; color: var(--fantasma); }
+
+.resumo { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0 0; font-size: 12.5px; }
+.resumo dt { color: var(--fantasma); }
+.resumo dd { margin: 0; overflow-wrap: anywhere; }
+.resumo dd.erro { color: var(--alerta); }
+.resumo dd.radio { color: var(--radio); }
+
+.regra .formula { display: block; font-size: 11.5px; color: var(--papel); }
+.tag-grupo { color: var(--radio); font-size: 11px; }
 
 .regras-title { margin-top: 0; }
 .log { max-height: 220px; overflow: auto; font-size: 11.5px; }
@@ -386,6 +408,9 @@ body.modo-lanterna::after {
 .estacao.recuada .bolha { fill: var(--ambar-dim); }
 .estacao.no-caminho .bolha { fill: var(--papel-claro); }
 .estacao.desconhecida { opacity: .35; cursor: not-allowed; }
+.estacao.manutencao .bolha { stroke: var(--ambar-dim); stroke-width: 2.5; stroke-dasharray: 2 2; }
+.estacao.lotada .bolha { stroke: var(--radio); stroke-width: 2.5; stroke-dasharray: 1 2; }
+.estacao.paralisada .bolha { stroke: var(--alerta); stroke-width: 2; stroke-dasharray: 3 2; opacity: .75; }
 .estacao .cruz { pointer-events: none; }
 
 .explorador {
@@ -406,13 +431,6 @@ body.modo-lanterna::after {
   text-shadow: var(--glow-alerta); box-shadow: var(--glow-alerta);
 }
 
-.regras-aguardando {
-  border: 1px dashed var(--radio);
-  padding: 8px 10px; margin-bottom: 8px;
-  font-family: var(--font-voz); color: var(--radio);
-}
-.regras-aguardando strong { display: block; font-family: var(--font-hud); font-size: 18px; font-weight: normal; letter-spacing: 1px; }
-.regra.pendente { border-left-style: dashed; }
 
 .corrida { min-height: 0; }
 .corrida-corpo { overflow-x: auto; }

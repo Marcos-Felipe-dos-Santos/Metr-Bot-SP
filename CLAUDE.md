@@ -30,15 +30,17 @@ Faça UMA POR VEZ, aguardando resposta em cada uma. Nunca pule.
 ## Arquitetura (não mudar sem pedir)
 - core/        -> código avaliado: grafo.py (LINHAS, CORES, hubs, locais
                   conhecidos), busca.py (BFS/DFS com registro de trace),
-                  logica.py (fatos, R1–R5), planejador.py (lógica+busca),
+                  logica.py (fatos, R1–R8), planejador.py (lógica+busca),
+                  interprete.py (intérprete offline da aula),
                   testes (6 casos exigidos pelo desafio)
 - main.py      -> FastAPI. Endpoints: /api/rota, /api/inferencia,
                   /api/narrar (SSE com fallback offline), /api/estacoes,
-                  /api/locais, /api/interpretar (Llama extrai nomes; core valida).
+                  /api/locais, /api/interpretar (LLM extrai nomes; core valida),
+                  /api/tabela-verdade.
                   Serve static/ como app single-page (sem build).
 - static/      -> front SEM build: index.html + style.css + app.js
                   + mapa.svg (já existentes conforme design system)
-- notebook/    -> .ipynb original mantido como prova dos requisitos R1–R7
+- notebook/    -> README sobre o formato de entrega (notebook a confirmar com o professor)
 - README.md    -> nomes dos alunos no topo (obrigatório)
 
 ## Contrato de trace (formato imutável)
@@ -88,29 +90,47 @@ Fase 4: README.md + validação ponta a ponta + instruções de execução
 - Testes do core/ devem passar antes de qualquer mudança de contrato.
 - Nunca subir .env (chave da Groq fica em variável de ambiente).
 
+## Fonte oficial
+- desafio.pdf (raiz, fora do git: direitos autorais). R1–R5 = "As 5 regras do
+  MetrôBot" (Passo 4.4); R6 integração e R7 do grupo = Desafio, requisito R3.
+  Requisitos do desafio são R1–R6 (Modelagem, Busca, Lógica, Llama,
+  Interface, Testes). Nomes das estações: exatamente os de "Dados das linhas"
+  (Japão-Liberdade, Patriarca-Vila Ré).
+- Decisões do aluno: cores reais do Metrô (não as CORES do PDF); regras do
+  grupo R7 (linha paralisada) e R8 (horário de pico); locais extras
+  Conjunto Nacional, Shopping Pátio Paulista, Beco do Batman, Memorial da
+  América Latina.
+
 ## Convenção de vizinhos (define os traces e os testes)
 - Ordem = ordem do percurso de cada linha: L1 norte→sul (Tucuruvi→Jabaquara),
   L2 Vila Madalena→Vila Prudente, L3 oeste→leste (Palmeiras-Barra Funda→
   Corinthians-Itaquera).
 - Hubs: vizinhos da L1 primeiro, depois os da outra linha, REMOVENDO repetidos
   (mantém a primeira ocorrência):
-  Sé → [São Bento, Liberdade, Anhangabaú, Pedro II]
+  Sé → [São Bento, Japão-Liberdade, Anhangabaú, Pedro II]
   Paraíso → [Vergueiro, Ana Rosa, Brigadeiro]
   Ana Rosa → [Paraíso, Vila Mariana, Chácara Klabin]
 - Aresta Paraíso–Ana Rosa pertence às linhas 1 e 2 (trace registra ambas).
-- 52 estações (3 hubs contados uma vez). Locais conhecidos: por ora só
-  "Shopping Metrô Tucuruvi" → Tucuruvi (aguardando texto oficial).
+- 52 estações (3 hubs contados uma vez); 21 locais (≥3 por linha).
 
 ## Propriedade da rede (relatório e apresentação)
 - As 3 linhas não formam ciclo: existe caminho ÚNICO entre duas estações.
   BFS e DFS chegam à mesma rota; a diferença é só o esforço (nós visitados,
   backtracks). É isso que a "corrida BFS × DFS" deve evidenciar.
 - Bloquear uma estação desse caminho único torna o destino inalcançável
-  ("túnel obstruído"): coberto por teste e pela narração.
-- Os 11 testes pulados ("aguardando texto oficial") permanecem até o grupo
-  fornecer R1–R5, R1–R7 e os 6 casos.
+  ("túnel obstruído"). Casos 5 × 6 explicados no README.
 
-## Formato do trace (v1 — core/busca.py e core/logica.py)
+## Lógica (core/logica.py)
+- Fatos de base: estacao(e), pertence(e, "Linha X-Cor"), proximo_de(local, e).
+  integracao e bloqueada NUNCA são digitadas (vêm de R6 e de R3/R7).
+- Cenário: usuario_esta_em / usuario_esta_na_estacao, usuario_quer_ir /
+  usuario_quer_ir_estacao, precisa_acessibilidade, fechada, elevador_em_
+  manutencao, paralisada(l), horario_pico, lotada.
+- Encadeamento: rodadas como no PDF (regras veem os fatos do início da
+  rodada); estratos para a negação da R7 (estrato 1, depois da R6).
+- R4 não bloqueia; R5 só para papel ∈ {origem, destino}; R8 só alerta.
+
+## Formato do trace (core/busca.py — inalterado desde a Fase 1)
 Comum (BFS e DFS): algoritmo, estrutura, origem, destino, bloqueadas,
 passos[], ordem[], visitados[], pai{no: pai|null}, encontrado, motivo,
 caminho[], caminho_arestas[{de, para, linhas[]}], metricas{}.
@@ -125,46 +145,49 @@ caminho[], caminho_arestas[{de, para, linhas[]}], metricas{}.
   nos_visitados.
 - motivo (quando encontrado=false): "origem bloqueada" | "destino bloqueado"
   | "sem caminho (bloqueios isolam o destino)"; paradas = null.
-- Inferência: regras[{id, texto_oficial, pendente}], regras_pendentes[],
-  inferencias[{n, iteracao, regra, fato, justificativa[]}], fatos_derivados[],
-  bloqueadas[], total_fatos. Fato = {predicado, args[], texto}.
-- Planejador: {origem, destino, bloqueadas, inferencia, buscas{BFS, DFS},
-  comparacao{ALG: {encontrado, motivo, caminho, ...metricas}},
-  diagnostico{obstrucoes[], trechos[{linha, de, ate, paradas}],
-  baldeacoes[{estacao, de_linha, para_linha}]}}.
-  obstrucoes = bloqueadas que estão no caminho único sem bloqueio.
+- Inferência (v2): regras[{id, nome, formula, descricao, estrato, do_grupo}],
+  regras_disparadas[], inferencias[{n, iteracao (=rodada), regra, fato,
+  justificativa[]}], fatos_derivados[], origem[], destino[], bloqueadas[],
+  integracoes[], inacessiveis[], alertas[{papel, estacao}], alertas_lotacao[],
+  total_fatos (+ fatos_iniciais se incluir_base). Fato = {predicado, args[], texto}.
+- Planejador (v2): {origem, destino (deduzidos por R1/R2), cenario{origem
+  {tipo,nome}, destino, acessibilidade, fechadas, manutencao, paralisadas
+  (ids), horario_pico, lotadas}, bloqueadas, alertas, alertas_lotacao,
+  regras_disparadas, inferencia, buscas{BFS, DFS}, comparacao{ALG:
+  {encontrado, motivo, caminho, tempo_min, ...metricas}}, diagnostico
+  {obstrucoes[], trechos[{linha, de, ate, paradas}], baldeacoes[{estacao,
+  de_linha, para_linha}], tempo_min}}. TEMPO_POR_TRECHO = 2 min.
 
-## Contrato da API (Fase 2 — main.py)
-- GET  /api/estacoes → {linhas[{id, nome, cor, estacoes[]}], hubs[], estacoes[dossiê]}
-- GET  /api/locais → {pendente, aviso, locais[{nome, estacao}]}
-- POST /api/rota {origem, destino, bloqueadas[], algoritmo: bfs|dfs|ambos}
-  → saída do planejador. 404 = estação/local desconhecido; 422 = algoritmo inválido.
-- POST /api/inferencia {bloqueadas[], incluir_rede} → inferência (JSON acima).
-- GET  /api/narrar?origem&destino&bloqueadas=A&bloqueadas=B&algoritmo (SSE,
-  compatível com EventSource). Eventos em ordem: fatos → inicio{fonte:
-  llama|offline, motivo?, reiniciar?} → trecho{texto}* → fim{fonte}.
-  Se o Llama cair no meio, vem um segundo "inicio" com fonte offline e
-  reiniciar=true: o front descarta o texto parcial.
-- POST /api/interpretar {mensagem (1–500)} → {offline, motivo, modelo?, origem,
-  destino, bloqueadas[], extraido}. O Llama (JSON mode, temperatura 0) só
-  EXTRAI nomes {origem, destino, bloqueadas}; core.planejador.validar_nomes
-  confere cada um contra a rede, sem aproximação. Nome fora da rede → 422
-  {erro, invalidos[], extraido}. JSON fora do formato → 502. Sem chave ou
-  GroqError → 200 com offline=true e campos vazios (front usa clique/busca).
-  Não calcula rota: o front aplica os nomes e o usuário DESPACHA (/api/rota).
-- "inicio" com fonte llama traz também "modelo" (GROQ_MODEL em uso).
+## Contrato da API (main.py)
+- GET  /api/estacoes → {linhas[{id, nome, nome_logico, cor, estacoes[]}],
+  hubs[] (deduzidos pela R6), estacoes[dossiê]}
+- GET  /api/locais → {locais[{nome, estacao, linhas[]}]}
+- GET  /api/tabela-verdade → {formula, legenda, linhas[{P, Q, R, resultado}]}
+- POST /api/rota {origem, destino, fechadas[], manutencao[], acessibilidade,
+  paralisadas[], horario_pico, lotadas[], algoritmo: bfs|dfs|ambos}
+  → planejador. 404 = estação/local/linha desconhecida (ou local usado como
+  estação em cenário); 422 = entrada inválida.
+- POST /api/inferencia {mesmo cenário, origem?, destino?, incluir_base}
+- POST /api/interpretar {mensagem (1–500)} → {fonte: llm|offline, offline,
+  modelo, motivo, origem, destino, fechadas[], acessibilidade, extraido}.
+  LLM em JSON mode (temperatura 0) extrai SÓ {origem, destino, fechadas,
+  acessibilidade}; validar_nomes confere (sem aproximação). Nome fora da
+  rede → 422 {erro, invalidos[], extraido}; JSON fora do formato → 502.
+  Sem chave ou GroqError → interpretar_offline (PDF). Front rejeita o pedido
+  se faltar origem ou destino (como no PDF) e nunca despacha sozinho.
+- GET  /api/narrar?(mesmos parâmetros de /api/rota) (SSE). Eventos: fatos →
+  inicio{fonte: llama|offline, modelo?, motivo?, reiniciar?} → trecho* → fim.
+  Queda no meio: segundo "inicio" offline com reiniciar=true.
+- LLM recebe SOMENTE o evento "fatos". Env: GROQ_API_KEY, GROQ_MODEL
+  (padrão llama-3.3-70b-versatile). Só GroqError cai no offline. Clientes
+  AsyncGroq sempre em "async with".
 - Conta Groq do projeto sem Llama de conversa: validação real feita com
   GROQ_MODEL=openai/gpt-oss-120b (JSON mode OK). Código segue pronto p/ Llama.
-- Llama recebe SOMENTE o evento "fatos". Env: GROQ_API_KEY, GROQ_MODEL
-  (padrão llama-3.3-70b-versatile). Só erros GroqError caem no offline.
-- Regra do front: /api/rota e /api/narrar recebem OS MESMOS parâmetros
-  (origem, destino, bloqueadas, algoritmo); o evento "fatos" ecoa origem,
-  destino, bloqueadas e esforco{ALG} para o front conferir.
+- Regra do front: /api/rota, /api/inferencia e /api/narrar recebem OS MESMOS
+  parâmetros; o evento "fatos" ecoa "cenario" para o front conferir.
 - Front: stream encerrado sem "fim" = erro de narração (não esperar para sempre).
-- "/" serve static/ (index.html pendente da Fase 3).
 - Rodar: .venv\Scripts\python -m uvicorn main:app --reload
 
-## Pendências (NÃO inventar)
-- Texto literal de R1–R5, requisitos R1–R7 e os 6 casos oficiais: aguardando
-  PDF/notebook. Regras ficam sem corpo; testes oficiais ficam como skip
-  "aguardando texto oficial".
+## Pendências
+- Formato de entrega: o PDF descreve notebook com ipywidgets; confirmar com
+  o professor se o notebook é obrigatório (ver notebook/README.md).

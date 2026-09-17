@@ -11,11 +11,15 @@ const RAIO_HUB = 6.5;
 
 const estado = {
   modo: "origem",
-  origem: null,
+  origem: null,        // nome escolhido: estação ou local conhecido
   destino: null,
-  bloqueadas: [],
+  fechadas: [],        // cenário simulado (vira fatos lógicos no backend)
+  manutencao: [],
+  lotadas: [],
   rede: null,          // /api/estacoes
   locais: [],          // /api/locais
+  estacaoDoLocal: new Map(),
+  tabela: null,        // /api/tabela-verdade
   noSvg: new Map(),    // nome -> <g.estacao>
   execucao: 0,         // id da reprodução atual (cancela a anterior)
   pular: false,
@@ -160,7 +164,7 @@ function conferirMapa() {
 
 function limparReproducao() {
   for (const g of estado.noSvg.values()) {
-    g.classList.remove("onda", "fronteira", "explorada", "recuada", "no-caminho");
+    g.classList.remove("onda", "fronteira", "explorada", "recuada", "no-caminho", "paralisada");
   }
   const svg = $("#mapa-svg-host svg");
   if (!svg) return;
@@ -185,21 +189,41 @@ function definirModo(modo) {
   }
 }
 
-/** Único ponto de entrada: clique no mapa e busca chamam esta função. */
+const LISTA_DO_MODO = { fechar: "fechadas", manutencao: "manutencao", lotada: "lotadas" };
+
+/** Estação de um nome escolhido (a própria estação ou a do local). */
+function estacaoDe(nome) {
+  if (!nome) return null;
+  return estado.estacaoDoLocal.get(nome) ?? nome;
+}
+
+function conhecido(nome) {
+  return estado.estacaoDoLocal.has(nome) || estado.rede.estacoes.some((e) => e.nome === nome);
+}
+
+function rotulo(nome) {
+  const estacao = estacaoDe(nome);
+  return estacao === nome ? nome : `${nome} (${estacao})`;
+}
+
+/** Único ponto de entrada: clique no mapa, busca e intérprete chamam esta função. */
 function escolher(nome) {
-  if (!estado.rede.estacoes.some((e) => e.nome === nome)) {
+  if (!conhecido(nome)) {
     log(`"${nome}" não existe no backend`, "erro");
     return;
   }
-  if (estado.modo === "bloquear") {
-    if (nome === estado.origem || nome === estado.destino) {
-      log(`${nome} é origem/destino: bloqueio registrado mesmo assim (o core decide)`, "erro");
+  const estacao = estacaoDe(nome);
+  const lista = LISTA_DO_MODO[estado.modo];
+  if (lista) {
+    const itens = estado[lista];
+    const i = itens.indexOf(estacao);
+    if (i >= 0) itens.splice(i, 1);
+    else itens.push(estacao);
+    if (lista === "fechadas" && [estacaoDe(estado.origem), estacaoDe(estado.destino)].includes(estacao)) {
+      log(`${estacao} é origem/destino: fechamento registrado mesmo assim (o core decide)`, "erro");
     }
-    const i = estado.bloqueadas.indexOf(nome);
-    if (i >= 0) estado.bloqueadas.splice(i, 1);
-    else estado.bloqueadas.push(nome);
-  } else if (estado.bloqueadas.includes(nome)) {
-    log(`${nome} está bloqueada — desbloqueie antes (modo BLOQUEAR)`, "erro");
+  } else if (estado.fechadas.includes(estacao)) {
+    log(`${estacao} está fechada — reabra antes (modo FECHAR)`, "erro");
     return;
   } else if (estado.modo === "origem") {
     estado.origem = nome;
@@ -210,15 +234,25 @@ function escolher(nome) {
   atualizarSelecao();
 }
 
+function linhasParalisadas() {
+  return [...document.querySelectorAll(".paralisar:checked")].map((c) => c.value);
+}
+
 function atualizarSelecao() {
+  const org = estacaoDe(estado.origem);
+  const dst = estacaoDe(estado.destino);
   for (const [nome, g] of estado.noSvg) {
-    g.classList.toggle("origem", nome === estado.origem);
-    g.classList.toggle("destino", nome === estado.destino);
-    g.classList.toggle("bloqueada", estado.bloqueadas.includes(nome));
+    g.classList.toggle("origem", nome === org);
+    g.classList.toggle("destino", nome === dst);
+    g.classList.toggle("bloqueada", estado.fechadas.includes(nome));
+    g.classList.toggle("manutencao", estado.manutencao.includes(nome));
+    g.classList.toggle("lotada", estado.lotadas.includes(nome));
   }
-  $("#sel-origem").textContent = estado.origem || "—";
-  $("#sel-destino").textContent = estado.destino || "—";
-  $("#sel-bloqueadas").textContent = estado.bloqueadas.join(", ") || "nenhuma";
+  $("#sel-origem").textContent = estado.origem ? rotulo(estado.origem) : "—";
+  $("#sel-destino").textContent = estado.destino ? rotulo(estado.destino) : "—";
+  $("#sel-fechadas").textContent = estado.fechadas.join(", ") || "nenhuma";
+  $("#sel-manutencao").textContent = estado.manutencao.join(", ") || "nenhuma";
+  $("#sel-lotadas").textContent = estado.lotadas.join(", ") || "nenhuma";
   $("#btn-despachar").disabled = !(estado.origem && estado.destino);
 }
 
@@ -235,9 +269,19 @@ function mostrarDossie(g) {
   } else {
     box.appendChild(el("span", "", "fora da base do backend"));
   }
-  if (estado.bloqueadas.includes(g.dataset.nome)) {
+  const perto = estado.locais.filter((l) => l.estacao === g.dataset.nome).map((l) => l.nome);
+  if (perto.length) {
     box.appendChild(el("br"));
-    box.appendChild(el("span", "dossie-alerta", "BLOQUEADA"));
+    box.appendChild(el("span", "", `perto: ${perto.join(", ")}`));
+  }
+  const avisos = [
+    [estado.fechadas, "FECHADA"],
+    [estado.manutencao, "ELEVADOR EM MANUTENÇÃO"],
+    [estado.lotadas, "LOTADA"],
+  ].filter(([lista]) => lista.includes(g.dataset.nome));
+  for (const [, texto] of avisos) {
+    box.appendChild(el("br"));
+    box.appendChild(el("span", "dossie-alerta", texto));
   }
   const mapa = $("#mapa").getBoundingClientRect();
   const r = g.querySelector(".bolha").getBoundingClientRect();
@@ -272,11 +316,10 @@ function ligarMapa(svg) {
 // Busca de locais: só filtra texto para o dropdown. Quem resolve é o backend.
 function opcoesBusca() {
   const estacoes = estado.rede.estacoes.map((e) => ({
-    rotulo: e.nome, estacao: e.nome,
-    detalhe: e.linhas.map((l) => l.nome).join(" + "),
+    rotulo: e.nome, detalhe: e.linhas.map((l) => l.nome).join(" + "),
   }));
   const locais = estado.locais.map((l) => ({
-    rotulo: l.nome, estacao: l.estacao, detalhe: `local → ${l.estacao}`,
+    rotulo: l.nome, detalhe: `local → ${l.estacao}`,
   }));
   return [...locais, ...estacoes];
 }
@@ -296,7 +339,7 @@ function ligarBusca() {
     [...drop.children].forEach((c, i) => c.classList.toggle("ativo", i === ativo));
   };
   const aplicar = (item) => {
-    escolher(item.estacao);
+    escolher(item.rotulo);
     input.value = "";
     fechar();
   };
@@ -305,7 +348,15 @@ function ligarBusca() {
     const termo = normalizar(input.value);
     drop.replaceChildren();
     if (!termo) return fechar();
-    itens = opcoesBusca().filter((o) => normalizar(o.rotulo).includes(termo)).slice(0, 12);
+    // Só ordena texto para o dropdown: exato primeiro, depois "começa com".
+    const peso = (o) => {
+      const n = normalizar(o.rotulo);
+      return n === termo ? 0 : n.startsWith(termo) ? 1 : 2;
+    };
+    itens = opcoesBusca()
+      .filter((o) => normalizar(o.rotulo).includes(termo))
+      .sort((a, b) => peso(a) - peso(b))
+      .slice(0, 12);
     if (!itens.length) {
       drop.appendChild(el("div", "dropdown-item vazio", "sem sinal para esse nome"));
     }
@@ -366,23 +417,28 @@ function ligarInterpretacao() {
         log(`interpretar: ${detalhe}`, "erro");
         return;
       }
-      if (dados.offline) {
-        avisar(`Intérprete offline (${dados.motivo}). Escolha pelo mapa ou pela busca.`, "erro");
+      const fonte = dados.fonte === "llm" ? dados.modelo : `offline — ${dados.motivo}`;
+      if (!dados.origem || !dados.destino) {
+        // Como no PDF: sem origem E destino válidos, o pedido é rejeitado inteiro.
+        avisar(`Não entendi origem/destino (${fonte}). Escolha pelo mapa ou pela busca.`, "erro");
+        log(`interpretar (${fonte}): ${JSON.stringify(dados.extraido)} → rejeitado`, "erro");
         $("#busca").focus();
         return;
       }
-      if (dados.origem) estado.origem = dados.origem;
-      if (dados.destino) estado.destino = dados.destino;
-      estado.bloqueadas = [...dados.bloqueadas];
-      definirModo(estado.destino ? "bloquear" : "destino");
+      estado.origem = dados.origem;
+      estado.destino = dados.destino;
+      estado.fechadas = [...dados.fechadas];
+      $("#acessibilidade").checked = dados.acessibilidade;
+      definirModo("fechar");
       atualizarSelecao();
       const partes = [
-        dados.origem && `origem ${dados.origem}`,
-        dados.destino && `destino ${dados.destino}`,
-        `bloqueadas ${listar(dados.bloqueadas)}`,
-      ].filter(Boolean);
-      avisar(`Entendido: ${partes.join(" · ")}. Confira e DESPACHE.`, "trace");
-      log(`interpretar (${dados.modelo}): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
+        `origem ${rotulo(dados.origem)}`,
+        `destino ${rotulo(dados.destino)}`,
+        `fechadas ${listar(dados.fechadas)}`,
+        `acessibilidade ${dados.acessibilidade ? "sim" : "não"}`,
+      ];
+      avisar(`Entendido via ${fonte}: ${partes.join(" · ")}. Confira e DESPACHE.`, "trace");
+      log(`interpretar (${fonte}): ${JSON.stringify(dados.extraido)} → ${partes.join(" · ")}`, "trace");
     } catch (erro) {
       avisar(`Sem contato com a Central: ${erro.message}`, "erro");
     } finally {
@@ -500,11 +556,12 @@ function mostrarCorrida(plano) {
   box.replaceChildren();
   const tabela = el("table", "tabela-corrida");
   const cab = el("tr");
-  ["", "visitados", "passos", "backtracks", "máx. fronteira", "paradas"].forEach((t) => cab.appendChild(el("th", "", t)));
+  ["", "visitados", "passos", "backtracks", "máx. fronteira", "paradas", "tempo"].forEach((t) => cab.appendChild(el("th", "", t)));
   tabela.appendChild(cab);
   for (const [nome, c] of Object.entries(plano.comparacao)) {
     const tr = el("tr", `alg-${nome.toLowerCase()}`);
-    [nome, c.nos_visitados, c.passos, c.backtracks ?? "—", c.max_fronteira, c.paradas ?? "—"]
+    [nome, c.nos_visitados, c.passos, c.backtracks ?? "—", c.max_fronteira, c.paradas ?? "—",
+      c.tempo_min === null ? "—" : `~${c.tempo_min} min`]
       .forEach((v) => tr.appendChild(el("td", "", String(v))));
     tabela.appendChild(tr);
   }
@@ -517,19 +574,34 @@ function mostrarCorrida(plano) {
       : "Rotas diferentes."));
   }
   const d = plano.diagnostico;
-  if (d.baldeacoes.length) {
-    box.appendChild(el("p", "linha-log radio",
-      `Baldeações: ${d.baldeacoes.map((b) => `${b.estacao} (L${b.de_linha}→L${b.para_linha})`).join(", ")}`));
-  }
-  if (d.obstrucoes.length) {
-    box.appendChild(el("p", "linha-log erro", `Obstruções no caminho único: ${d.obstrucoes.join(", ")}`));
-  }
+  const nomeLinha = (id) => estado.rede.linhas.find((l) => l.id === id).nome;
+  const resumo = el("dl", "resumo");
+  const item = (rotuloItem, valor, tipo = "") => {
+    resumo.appendChild(el("dt", "", rotuloItem));
+    resumo.appendChild(el("dd", tipo, String(valor)));
+  };
+  const principal = Object.values(plano.comparacao)[0];
+  item("paradas", principal.paradas ?? "sem rota");
+  item("baldeações", d.baldeacoes.length
+    ? `${d.baldeacoes.length}: ${d.baldeacoes.map((b) => `na ${b.estacao}, ${nomeLinha(b.de_linha)} → ${nomeLinha(b.para_linha)}`).join("; ")}`
+    : "0");
+  item("tempo estimado", d.tempo_min === null ? "—" : `~${d.tempo_min} min (2 min por trecho)`);
+  item("alertas", plano.alertas.length
+    ? plano.alertas.map((a) => `${a.papel}: ${a.estacao} (elevador)`).join("; ") : "nenhum",
+  plano.alertas.length ? "erro" : "");
+  item("lotação", plano.alertas_lotacao.join(", ") || "nenhuma", plano.alertas_lotacao.length ? "radio" : "");
+  item("bloqueadas (lógica)", plano.bloqueadas.join(", ") || "nenhuma");
+  item("regras disparadas", plano.regras_disparadas.join(", "));
+  if (d.obstrucoes.length) item("obstruções", d.obstrucoes.join(", "), "erro");
+  box.appendChild(resumo);
 }
 
 function rastroPuro(plano, inferencia) {
   const L = [];
   L.push(`DESPACHO ${plano.origem} -> ${plano.destino}`);
+  L.push(`cenário: ${JSON.stringify(plano.cenario)}`);
   L.push(`bloqueadas (base lógica): ${listar(plano.bloqueadas)}`);
+  L.push(`alertas: ${JSON.stringify(plano.alertas)}  lotação: ${listar(plano.alertas_lotacao)}`);
   for (const [nome, t] of Object.entries(plano.buscas)) {
     L.push("", `==== ${nome} · ${t.estrutura} ====`);
     for (const p of t.passos) {
@@ -552,11 +624,12 @@ function rastroPuro(plano, inferencia) {
     L.push(`metricas:  ${JSON.stringify(t.metricas)}`);
   }
   L.push("", "==== INFERÊNCIA (encadeamento para frente) ====");
-  L.push(`regras pendentes: ${listar(inferencia.regras_pendentes)}`);
+  L.push(`regras disparadas: ${listar(inferencia.regras_disparadas)}`);
+  L.push(`integrações deduzidas (R6): ${listar(inferencia.integracoes)}`);
   L.push(`total de fatos: ${inferencia.total_fatos}  derivados: ${inferencia.fatos_derivados.length}`);
   if (!inferencia.inferencias.length) L.push("nenhuma regra disparou");
   for (const i of inferencia.inferencias) {
-    L.push(`#${i.n} it=${i.iteracao} ${i.regra}: ${i.fato.texto}  <=  ${i.justificativa.map((j) => j.texto).join(" ∧ ")}`);
+    L.push(`#${i.n} rodada=${i.iteracao} ${i.regra}: ${i.fato.texto}  <=  ${i.justificativa.map((j) => j.texto).join(" ∧ ")}`);
   }
   $("#rastro-puro").textContent = L.join("\n");
 }
@@ -566,17 +639,9 @@ function rastroPuro(plano, inferencia) {
 function mostrarInferencia(inf) {
   const box = $("#regras");
   box.replaceChildren();
-  const todasPendentes = inf.regras.length > 0 && inf.regras_pendentes.length === inf.regras.length;
   $("#inferencia-resumo").textContent =
     `Base: ${inf.total_fatos} fatos · ${inf.fatos_derivados.length} derivados · ` +
-    `bloqueadas: ${inf.bloqueadas.join(", ") || "nenhuma"}`;
-  if (todasPendentes) {
-    const aviso = el("div", "regras-aguardando");
-    aviso.appendChild(el("strong", "", `${inf.regras[0].id}–${inf.regras.at(-1).id} aguardando texto oficial`));
-    aviso.appendChild(el("span", "justificativa",
-      "O motor de encadeamento está pronto; as regras entram quando o enunciado for fornecido. Nada é inventado."));
-    box.appendChild(aviso);
-  }
+    `integrações (R6): ${inf.integracoes.join(", ")} · disparadas: ${inf.regras_disparadas.join(", ")}`;
   const disparos = new Map();
   for (const i of inf.inferencias) {
     if (!disparos.has(i.regra)) disparos.set(i.regra, []);
@@ -584,15 +649,37 @@ function mostrarInferencia(inf) {
   }
   for (const r of inf.regras) {
     const d = disparos.get(r.id) || [];
-    const div = el("div", `regra${d.length ? " disparada" : ""}${r.pendente ? " pendente" : ""}`);
-    div.appendChild(el("span", "", `${r.id} · ${r.pendente ? "pendente" : r.texto_oficial || ""}`));
-    for (const i of d) {
+    const div = el("div", `regra${d.length ? " disparada" : ""}`);
+    const titulo = el("span", "", `${r.id} · ${r.nome}`);
+    if (r.do_grupo) titulo.appendChild(el("span", "tag-grupo", " do grupo"));
+    div.appendChild(titulo);
+    div.appendChild(el("span", "formula", r.formula));
+    // R6 dispara para as 3 integrações em todo despacho: resume para não poluir.
+    const mostrar = r.id === "R6" ? d.slice(0, 1) : d.slice(0, 6);
+    for (const i of mostrar) {
       div.appendChild(el("span", "justificativa",
         `${i.fato.texto} ⇐ ${i.justificativa.map((j) => j.texto).join(" ∧ ")}`));
     }
-    if (!r.pendente && !d.length) div.appendChild(el("span", "justificativa", "não disparou"));
+    if (d.length > mostrar.length) {
+      div.appendChild(el("span", "justificativa", `… +${d.length - mostrar.length} (ver Modo Auditoria)`));
+    }
+    if (!d.length) div.appendChild(el("span", "justificativa", "não disparou"));
     box.appendChild(div);
   }
+}
+
+function mostrarTabelaVerdade() {
+  const t = estado.tabela;
+  const v = (b) => (b ? "V" : "F");
+  const linhas = [
+    `TABELA-VERDADE (gerada pelo backend) — ${t.formula}`,
+    ...Object.entries(t.legenda).map(([k, d]) => `  ${k} = ${d}`),
+    "",
+    "  P | Q | R | P ∧ (¬Q ∨ R)",
+    "  --+---+---+-------------",
+    ...t.linhas.map((l) => `  ${v(l.P)} | ${v(l.Q)} | ${v(l.R)} | ${v(l.resultado)}`),
+  ];
+  $("#tabela-verdade").textContent = linhas.join("\n");
 }
 
 // ------------------------------------------------------------ rádio (SSE)
@@ -614,8 +701,11 @@ function narrar(params) {
   radio.classList.remove("erro");
   fonte.textContent = "· sintonizando";
 
-  const qs = new URLSearchParams({ origem: params.origem, destino: params.destino, algoritmo: params.algoritmo });
-  params.bloqueadas.forEach((b) => qs.append("bloqueadas", b));
+  const qs = new URLSearchParams();
+  for (const [chave, valor] of Object.entries(params)) {
+    if (Array.isArray(valor)) valor.forEach((v) => qs.append(chave, v));
+    else qs.append(chave, String(valor));
+  }
   const es = new EventSource(`/api/narrar?${qs}`);
   const sessao = { fonte: es, relogio: null, terminou: false };
   estado.radio = sessao;
@@ -641,8 +731,7 @@ function narrar(params) {
   es.addEventListener("fatos", (ev) => {
     vigiar();
     const f = dados(ev);
-    const confere = f.origem === params.origem && f.destino === params.destino &&
-      f.bloqueadas.join("|") === params.bloqueadas.join("|") &&
+    const confere = JSON.stringify(f.cenario) === JSON.stringify(estado.plano.cenario) &&
       Object.keys(f.esforco).join("|") === Object.keys(estado.plano.comparacao).join("|");
     if (!confere) falhar("narração não corresponde ao despacho exibido (parâmetros divergentes)");
   });
@@ -651,7 +740,7 @@ function narrar(params) {
     const d = dados(ev);
     if (d.reiniciar) {
       radio.textContent = "";
-      log("rádio: Llama caiu no meio — texto parcial descartado, Central offline assume", "erro");
+      log("rádio: LLM caiu no meio — texto parcial descartado, Central offline assume", "erro");
     }
     fonte.textContent = d.fonte === "llama" ? `· LLM ${d.modelo}` : `· OFFLINE (${d.motivo})`;
   });
@@ -675,10 +764,16 @@ function narrar(params) {
 async function despachar() {
   const execucao = ++estado.execucao;
   estado.pular = false;
+  // Os MESMOS parâmetros vão para /api/rota, /api/inferencia e /api/narrar.
   const params = {
     origem: estado.origem,
     destino: estado.destino,
-    bloqueadas: [...estado.bloqueadas],
+    fechadas: [...estado.fechadas],
+    manutencao: [...estado.manutencao],
+    acessibilidade: $("#acessibilidade").checked,
+    paralisadas: linhasParalisadas(),
+    horario_pico: $("#horario-pico").checked,
+    lotadas: [...estado.lotadas],
     algoritmo: $("#algoritmo").value,
   };
   pararRadio();
@@ -688,21 +783,31 @@ async function despachar() {
   $("#radio-fonte").textContent = "";
   $("#btn-pular").disabled = false;
   hud();
-  log(`despacho: ${params.origem} → ${params.destino} · bloqueadas ${listar(params.bloqueadas)} · ${params.algoritmo}`);
+  log(`despacho: ${params.origem} → ${params.destino} · fechadas ${listar(params.fechadas)} · ${params.algoritmo}`);
 
   try {
     const [plano, inferencia] = await Promise.all([
       api("/api/rota", params),
-      api("/api/inferencia", { bloqueadas: params.bloqueadas }),
+      api("/api/inferencia", { ...params, algoritmo: undefined }),
     ]);
     conferir(execucao);
     estado.plano = plano;
     mostrarInferencia(inferencia);
     rastroPuro(plano, inferencia);
+    // Bloqueios deduzidos só pela lógica (R7: linha paralisada).
+    const marcarParalisadas = () => {
+      for (const e of plano.bloqueadas) {
+        if (!plano.cenario.fechadas.includes(e)) estado.noSvg.get(e)?.classList.add("paralisada");
+      }
+    };
+    marcarParalisadas();
 
     const buscas = Object.entries(plano.buscas);
     for (const [nome, trace] of buscas) {
-      if (buscas.length > 1) limparReproducao();
+      if (buscas.length > 1) {
+        limparReproducao();
+        marcarParalisadas();
+      }
       if (!trace.encontrado) log(`${nome}: ${trace.motivo}`, "erro");
       if (nome === "BFS") await reproduzirBFS(trace, execucao);
       else await reproduzirDFS(trace, execucao);
@@ -730,8 +835,13 @@ function limparTudo() {
   pararRadio();
   estado.origem = null;
   estado.destino = null;
-  estado.bloqueadas = [];
+  estado.fechadas = [];
+  estado.manutencao = [];
+  estado.lotadas = [];
   estado.plano = null;
+  $("#acessibilidade").checked = false;
+  $("#horario-pico").checked = false;
+  document.querySelectorAll(".paralisar").forEach((c) => { c.checked = false; });
   definirModo("origem");
   limparReproducao();
   atualizarSelecao();
@@ -757,12 +867,14 @@ async function iniciar() {
   });
 
   try {
-    const [svg, rede, locais] = await Promise.all([
-      carregarMapa(), api("/api/estacoes"), api("/api/locais"),
+    const [svg, rede, locais, tabela] = await Promise.all([
+      carregarMapa(), api("/api/estacoes"), api("/api/locais"), api("/api/tabela-verdade"),
     ]);
     estado.rede = rede;
     estado.locais = locais.locais;
-    if (locais.pendente) log(`locais: ${locais.aviso}`);
+    estado.estacaoDoLocal = new Map(locais.locais.map((l) => [l.nome, l.estacao]));
+    estado.tabela = tabela;
+    mostrarTabelaVerdade();
     conferirMapa();
     ligarMapa(svg);
     ligarBusca();
