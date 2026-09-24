@@ -1,5 +1,10 @@
 # MetrôBot SP 2.0 — Intérprete e Narrador de Rotas do Metrô de São Paulo
 
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Testes](https://img.shields.io/badge/testes-146%20passando-brightgreen)
+![Offline](https://img.shields.io/badge/funciona-sem%20internet-blue)
+
 Aplicação web que planeja rotas nas linhas 1-Azul, 2-Verde e 3-Vermelha do
 Metrô de São Paulo: um LLM interpreta o pedido em linguagem natural e narra o
 resultado, enquanto a rota é decidida em Python por busca em grafo (BFS e DFS)
@@ -15,6 +20,15 @@ calculados. A origem, o destino e os bloqueios saem das regras R1–R8; o
 caminho sai do BFS/DFS. A interface apenas reproduz os traces gerados pelo
 backend, sem recalcular busca ou lógica em JavaScript.
 
+**Sumário:** [Como rodar](#como-rodar) ·
+[Estrutura](#estrutura-do-projeto) ·
+[Funcionalidades](#funcionalidades) ·
+[Regras R1–R8](#regras-de-inferência-r1r8) ·
+[6 casos obrigatórios](#os-6-casos-obrigatórios) ·
+[Rede e locais](#rede-e-locais-conhecidos) ·
+[Tabela-verdade](#tabela-verdade-de-pode_embarcar) ·
+[Modelo LLM](#transparência-sobre-o-modelo)
+
 ![Catedral da Sé → Pinacoteca com elevador parado na Luz](docs/screenshots/04_rota_selo.png)
 
 ---
@@ -23,20 +37,17 @@ backend, sem recalcular busca ou lógica em JavaScript.
 
 Requisitos: Python 3.13 (testado com 3.13.14) e um navegador moderno.
 
-```powershell
+Crie e ative o ambiente virtual:
+
+```bash
 python -m venv .venv
-```
-
-Ative o ambiente virtual:
-
-```powershell
 .venv\Scripts\activate          # Windows
 source .venv/bin/activate       # Linux e macOS
 ```
 
 Instale as dependências e suba o servidor:
 
-```powershell
+```bash
 pip install -r requirements.txt
 uvicorn main:app
 ```
@@ -45,23 +56,31 @@ Abra **http://localhost:8000**.
 
 ### Chave da API (opcional)
 
-Para usar o LLM, crie um arquivo `.env` na raiz do projeto. Ele está no
-`.gitignore` e não vai para o repositório.
+Para usar o LLM, copie o arquivo de exemplo e preencha sua chave da Groq:
+
+```bash
+copy .env.example .env          # Windows
+cp .env.example .env            # Linux e macOS
+```
 
 ```
 GROQ_API_KEY=sua_chave_groq
 GROQ_MODEL=openai/gpt-oss-120b
 ```
 
+O `.env` está no `.gitignore` e não vai para o repositório.
+
 Sem chave, com chave inválida, sem internet ou com o limite de uso esgotado, a
 aplicação continua funcionando: a interpretação usa o analisador offline em
 `core/interprete.py` e a narração usa um texto determinístico montado apenas
-com os fatos do trace. A demonstração não depende de internet.
+com os fatos do trace. **A demonstração não depende de internet.**
 
 ### Testes
 
-```powershell
-.venv\Scripts\python -m pytest
+Com o ambiente virtual ativado:
+
+```bash
+python -m pytest
 ```
 
 Resultado esperado: **146 testes passando, nenhum pulado**. Os 6 casos
@@ -86,14 +105,15 @@ static/                      # front sem build
 ├── app.js                   # só reproduz traces; nenhuma busca em JS
 └── mapa.svg                 # mapa da rede
 tests/                       # testes dos endpoints e do intérprete
-notebook/                    # ver notebook/README.md
+notebook/                    # notebook do desafio (ver notebook/README.md)
 docs/screenshots/            # capturas usadas neste README
+.env.example                 # modelo das variáveis de ambiente
 requirements.txt             # versões fixadas
 ```
 
-O notebook original do desafio será adicionado em `notebook/` assim que o
-formato de entrega for confirmado com o professor; ele reaproveitará `core/`
-sem duplicar código.
+O notebook em `notebook/` reaproveita o pacote `core/`, sem duplicar código:
+a lógica avaliada existe em um único lugar e é a mesma usada pela aplicação
+web e pelos testes.
 
 ---
 
@@ -131,10 +151,10 @@ depois que a R6 já deduziu as integrações.
 | R8 horário de pico | ∀e (horario_pico ∧ lotada(e) → alerta_lotacao(e)) | horario_pico, lotada | alerta_lotacao(e) |
 
 R1–R6 vêm do enunciado. R7 (linha paralisada) e R8 (horário de pico) são as
-regras próprias exigidas do grupo. A R4 não bloqueia a estação, apenas a marca
-como inacessível; a R5 só emite alerta para origem ou destino; a R8 alerta sem
-bloquear. A R7 poupa as integrações, porque elas continuam atendidas pela
-outra linha.
+regras próprias exigidas pelo desafio. A R4 não bloqueia a estação, apenas a
+marca como inacessível; a R5 só emite alerta para origem ou destino; a R8
+alerta sem bloquear. A R7 poupa as integrações, porque elas continuam
+atendidas pela outra linha.
 
 ### Interpretação de linguagem natural
 
@@ -171,6 +191,9 @@ assume. Uma transmissão encerrada sem o evento `fim`, ou parada por mais de
 | `GET /api/tabela-verdade` | tabela-verdade de `pode_embarcar` |
 | `POST /api/rota` | inferência e busca; devolve traces, comparação e diagnóstico |
 | `POST /api/inferencia` | só a base lógica, com todas as justificativas |
+
+A documentação interativa gerada pelo FastAPI fica em
+**http://localhost:8000/docs** com o servidor rodando.
 
 ### Modo Auditoria
 
@@ -266,7 +289,7 @@ Fórmula: **pode_embarcar ≡ P ∧ (¬Q ∨ R)**
 - **R:** o elevador da estação está funcionando
 
 | P | Q | R | pode_embarcar |
-|---|---|---|---|
+|:---:|:---:|:---:|:---:|
 | V | V | V | V |
 | V | V | F | F |
 | V | F | V | V |
@@ -301,6 +324,3 @@ foi feita com `GROQ_MODEL=openai/gpt-oss-120b`, que aceita o modo JSON exigido
 pelo intérprete. O modelo em uso aparece na interface e no campo `modelo` das
 respostas da API. Com uma chave que tenha acesso ao Llama, basta alterar a
 variável `GROQ_MODEL`.
-
----
-
