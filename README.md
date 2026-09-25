@@ -10,7 +10,10 @@ Metrô de São Paulo: um LLM interpreta o pedido em linguagem natural e narra o
 resultado, enquanto a rota é decidida em Python por busca em grafo (BFS e DFS)
 e por uma base lógica de primeira ordem com encadeamento para frente.
 
-**Autor:** Marcos Felipe dos Santos — RA 2403903. Trabalho individual.
+**Autores:**
+
+- Marcos Felipe dos Santos — RA 2403903
+- Leandro Silva Ferreira — RA 2397191
 
 Disciplina de Inteligência Artificial e Machine Learning — Prof. Hercules
 Ramos. Desafio MetrôBot SP 2.0.
@@ -28,8 +31,6 @@ backend, sem recalcular busca ou lógica em JavaScript.
 [Rede e locais](#rede-e-locais-conhecidos) ·
 [Tabela-verdade](#tabela-verdade-de-pode_embarcar) ·
 [Modelo LLM](#transparência-sobre-o-modelo)
-
-![Catedral da Sé → Pinacoteca com elevador parado na Luz](docs/screenshots/04_rota_selo.png)
 
 ---
 
@@ -106,7 +107,6 @@ static/                      # front sem build
 └── mapa.svg                 # mapa da rede
 tests/                       # testes dos endpoints e do intérprete
 notebook/                    # notebook do desafio (ver notebook/README.md)
-docs/screenshots/            # capturas usadas neste README
 .env.example                 # modelo das variáveis de ambiente
 requirements.txt             # versões fixadas
 ```
@@ -202,8 +202,6 @@ em texto puro: as regras aplicadas com fórmula e justificativa de cada
 disparo, o registro passo a passo da busca, a tabela-verdade e o trace
 completo, com fila, pilha, ordem, visitados, mapa de pais e métricas.
 
-![Detalhes da busca: regras aplicadas, trace e tabela-verdade](docs/screenshots/06_auditoria.png)
-
 ---
 
 ## Os 6 casos obrigatórios
@@ -233,8 +231,6 @@ precisa atravessar Paraíso.
   da mesma Linha 2, que alcança a Linha 1 por **Ana Rosa**
   (Chácara Klabin → Ana Rosa), sem passar por Paraíso. São 6 paradas na
   Linha 2 e 7 na Linha 1, com baldeação na Ana Rosa: 13 paradas no total.
-
-![Caso 5: sem rota entre Vila Madalena e Jabaquara](docs/screenshots/07_tunel_obstruido.png)
 
 ---
 
@@ -309,8 +305,6 @@ A tabela é gerada por código em `core/logica.py`, servida por
 Além das estações fechadas, a interface permite simular elevador em
 manutenção, necessidade de acessibilidade, horário de pico, estação lotada e
 linha inteira paralisada. Esses cenários alimentam as regras R4, R5, R7 e R8.
-
-![Linha 3 paralisada (R7) com horário de pico e estação lotada (R8)](docs/screenshots/08_linha_paralisada.png)
 
 ---
 
